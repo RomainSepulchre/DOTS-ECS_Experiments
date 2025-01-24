@@ -5,18 +5,12 @@ using UnityEngine;
 
 public class InstantiateAndScheduleParrallelJob : MonoBehaviour
 {
-
-
     void Update()
     {
         // Create a native array for our job
-        int startNumber = 1;
-        var intArray = new NativeArray<int>(900000, Allocator.TempJob);
-        for (int i = 0; i < intArray.Length; i++)
-        {
-            intArray[i] = startNumber;
-            startNumber++;
-        }
+        var intArray = new NativeArray<int>(10000, Allocator.TempJob); // Allocator see https://docs.unity3d.com/Packages/com.unity.collections@2.5/manual/allocator-overview.html
+        var jobGenerateArray = new GenerateIntArrayJob { StartNumber = 1, IntArray = intArray };
+        JobHandle handleGenerateArray = jobGenerateArray.Schedule();
 
         var job = new ParrallelJob { Numbers = intArray };
 
@@ -29,7 +23,7 @@ public class InstantiateAndScheduleParrallelJob : MonoBehaviour
         // -> When there is very little work values of 32 or 64 can make sense.
         // => It is needed to experiment and profile to find the best batch size in term of performance
         //    because with simple computation the bottleneck could be memory access (https://youtu.be/jdW66hA-Qu8?si=l12_EYkXmcGaDnl2&t=610)
-        JobHandle handle = job.Schedule(intArray.Length, 64);
+        JobHandle handle = job.Schedule(intArray.Length, 64, handleGenerateArray);
 
         // Still need to complete job
         handle.Complete();

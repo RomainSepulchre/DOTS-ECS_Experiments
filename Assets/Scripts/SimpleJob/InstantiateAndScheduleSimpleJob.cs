@@ -9,19 +9,24 @@ public class InstantiateAndScheduleSimpleJob : MonoBehaviour
     void Update()
     {
         // Create a native array for our job
-        int startNumber = 1;
-        var intArray = new NativeArray<int>(900000, Allocator.Persistent);
-        for (int i = 0; i < intArray.Length; i++)
-        {
-            intArray[i] = startNumber;
-            startNumber++;
-        }
+        var intArray = new NativeArray<int>(10000, Allocator.TempJob); // Allocator see https://docs.unity3d.com/Packages/com.unity.collections@2.5/manual/allocator-overview.html
+        var job = new GenerateIntArrayJob { StartNumber = 1, IntArray = intArray };
+        JobHandle handle = job.Schedule();
+        handle.Complete();
+
+        // All examples that can be runned to check what happening on the profiler
 
         ScheduleOneJob(intArray);
 
         ScheduleSeveralJobs(intArray);
 
         JobsChainDependency(intArray);
+
+        SeveralJobsWithSameDependency(intArray);
+
+        OneJobWithMultipleDependencies(intArray);
+
+        ComplexCombinationOfJobDependencies(intArray);
 
         // We need to dispose of intArray manually since it's a native Array
         intArray.Dispose();
@@ -120,14 +125,17 @@ public class InstantiateAndScheduleSimpleJob : MonoBehaviour
 
     private void SeveralJobsWithSameDependency(NativeArray<int> intArray)
     {
+        // Generate different Native Array for parralel jobs
+        GenerateOtherIntArray(out NativeArray<int> secondIntArray, out NativeArray<int> thirdIntArray);
+
         // Several Jobs with the same dependency
         // Several jobs can have the same dependency, so A can be the dependency for B, C and D at the same time
         // Ex: B, C, D all depends from A (A will be executed first, then B, C and D will run conccurently)
         var aJob = new SimpleJob { Numbers = intArray };
         // ! B, C and D cannot all use intArray since they could be scheduled conccurently, so for this example I created different array for C and D
         var bJob = new SimpleJob { Numbers = intArray }; 
-        var cJob = new SimpleJob { Numbers = new NativeArray<int>{ [0]=10 } }; 
-        var dJob = new SimpleJob { Numbers = new NativeArray<int>{ [0]=20 } }; 
+        var cJob = new SimpleJob { Numbers = secondIntArray }; 
+        var dJob = new SimpleJob { Numbers = thirdIntArray }; 
 
         JobHandle handleAJob = aJob.Schedule();
         JobHandle handleBJob = bJob.Schedule(handleAJob);
@@ -139,18 +147,25 @@ public class InstantiateAndScheduleSimpleJob : MonoBehaviour
         handleBJob.Complete();
         handleCJob.Complete();
         handleDJob.Complete();
+
+        // Dispose generated array
+        secondIntArray.Dispose();
+        thirdIntArray.Dispose();
     }
 
     private void OneJobWithMultipleDependencies(NativeArray<int> intArray)
     {
+        // Generate differents Native Array for parralel jobs
+        GenerateOtherIntArray(out NativeArray<int> secondIntArray, out NativeArray<int> thirdIntArray);
+
         // One job with multiple dependencies
         // Dependencies can be combined with JobHandle.CombineDependencies()
         // Ex: A depends from B, C and D
         var aJob = new SimpleJob { Numbers = intArray };
         // ! B, C and D cannot all use intArray since they could be scheduled conccurently, so for this example I created different array for C and D
         var bJob = new SimpleJob { Numbers = intArray };
-        var cJob = new SimpleJob { Numbers = new NativeArray<int>{ [0] = 10 } };
-        var dJob = new SimpleJob { Numbers = new NativeArray<int>{ [0] = 20 } };
+        var cJob = new SimpleJob { Numbers = secondIntArray };
+        var dJob = new SimpleJob { Numbers = thirdIntArray };
 
         JobHandle handleBJob = bJob.Schedule();
         JobHandle handleCJob = cJob.Schedule();
@@ -162,10 +177,16 @@ public class InstantiateAndScheduleSimpleJob : MonoBehaviour
 
         // We only need to call A.Complete() because all others jobs are its dependecies
         handleAJob.Complete();
+
+        // Dispose generated array
+        secondIntArray.Dispose();
+        thirdIntArray.Dispose();
     }
 
     private void ComplexCombinationOfJobDependencies(NativeArray<int> intArray)
     {
+        GenerateOtherIntArray(out NativeArray<int> secondIntArray, out NativeArray<int> thirdIntArray);
+
         // We can combine all the types of dependencies explained before to create a complex graph of dependencies
 
         // Ex:
@@ -174,11 +195,11 @@ public class InstantiateAndScheduleSimpleJob : MonoBehaviour
         //      C <-/ \<- G <- H <- I
 
         var aJob = new SimpleJob { Numbers = intArray };
-        var bJob = new SimpleJob { Numbers = new NativeArray<int>{ [0] = 10 } };
-        var cJob = new SimpleJob { Numbers = new NativeArray<int>{ [0] = 20 } };
+        var bJob = new SimpleJob { Numbers = secondIntArray };
+        var cJob = new SimpleJob { Numbers = thirdIntArray };
         var dJob = new SimpleJob { Numbers = intArray };
-        var eJob = new SimpleJob { Numbers = new NativeArray<int>{ [0] = 10 } };
-        var fJob = new SimpleJob { Numbers = new NativeArray<int>{ [0] = 10 } };
+        var eJob = new SimpleJob { Numbers = secondIntArray };
+        var fJob = new SimpleJob { Numbers = thirdIntArray };
         var gJob = new SimpleJob { Numbers = intArray };
         var hJob = new SimpleJob { Numbers = intArray };
         var iJob = new SimpleJob { Numbers = intArray };
@@ -209,6 +230,10 @@ public class InstantiateAndScheduleSimpleJob : MonoBehaviour
         handleEJob.Complete();
         handleFJob.Complete();
         handleIJob.Complete();
+
+        // Dispose generated array
+        secondIntArray.Dispose();
+        thirdIntArray.Dispose();
     }
 
     private void CyclicDependencies()
@@ -223,7 +248,26 @@ public class InstantiateAndScheduleSimpleJob : MonoBehaviour
         // Should not be possible since a job can only depends from a job that already has been scheduled and once schedule a job cannot change its dependencies
     }
 
-    public void LogIntNativeArrayItems(NativeArray<int> intArray, string context="")
+    private void GenerateOtherIntArray(out NativeArray<int> secondArray, out NativeArray<int> thirdArray)
+    {
+        secondArray = new NativeArray<int>(10000, Allocator.TempJob);
+        var jobFillSecondArray = new GenerateIntArrayJob { StartNumber = 1, IntArray = secondArray };
+        thirdArray = new NativeArray<int>(10000, Allocator.TempJob);
+        var jobFillThirdArray = new GenerateIntArrayJob { StartNumber = 1, IntArray = thirdArray };
+
+        JobHandle handleFillSecondArray = jobFillSecondArray.Schedule();
+        JobHandle handleFillThirdArray = jobFillThirdArray.Schedule();
+
+        handleFillSecondArray.Complete();
+        handleFillThirdArray.Complete();
+
+        // Not necessary to do this since the job array is already pointing to the array passed at initialization. Should I keep it as a security or just to make the code clear ?
+        // Note: NativeArray.Equals(OtherNativeArray) return true, however ReferenceEquals() return false -> I guess it's related to NativeArray being unmanaged objects
+        //secondArray = jobFillSecondArray.IntArray;
+        //thirdArray = jobFillThirdArray.IntArray;
+    }
+
+    private void LogIntNativeArrayItems(NativeArray<int> intArray, string context="")
     {
         string logMessage = $"{context} | Log IntNativeArray Items : [";
         for (int i = 0; i < intArray.Length; i++)
