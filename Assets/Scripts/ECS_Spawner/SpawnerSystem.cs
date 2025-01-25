@@ -23,6 +23,7 @@ public partial struct SpawnerSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        
         foreach (RefRW<Spawner> spawner in SystemAPI.Query<RefRW<Spawner>>())
         {
             ProcessSpawner(ref state, spawner);
@@ -53,6 +54,7 @@ public partial struct SpawnerSystem : ISystem
         }
     }
 }
+
 
 
 //

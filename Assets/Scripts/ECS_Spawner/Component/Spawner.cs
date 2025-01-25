@@ -2,6 +2,9 @@
 using Unity.Entities;
 using Unity.Mathematics;
 
+
+// Entities and component: https://www.youtube.com/watch?v=jzCEzNoztzM
+
 public struct Spawner : IComponentData
 {
     public Entity Prefab;
