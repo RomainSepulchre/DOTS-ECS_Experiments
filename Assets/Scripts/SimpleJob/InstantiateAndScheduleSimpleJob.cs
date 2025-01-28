@@ -14,6 +14,7 @@ public class InstantiateAndScheduleSimpleJob : MonoBehaviour
         JobHandle handle = job.Schedule();
         handle.Complete();
 
+
         // All examples that can be runned to check what happening on the profiler
 
         ScheduleOneJob(intArray);
@@ -34,16 +35,11 @@ public class InstantiateAndScheduleSimpleJob : MonoBehaviour
 
     private void ScheduleOneJob(NativeArray<int> intArray)
     {
-        //LogIntNativeArrayItems(intArray, $"BEFORE SINGLE JOB");
-
         // Instantiate the job
         var job = new SimpleJob { Numbers = intArray };
 
         // Schedule job (Put the job in the global job queue)
         JobHandle handle = job.Schedule();
-
-        // Sleep to simulate other operation going on before .Complete();
-        //Thread.Sleep( 2000 );
 
         // .Complete() should be called at some point after the job has been schedule
         // -> if the job hasn't finished it's execution, .Complete() wait for the job to finish to continue (.Complete() will not return until the job has finished it's execution)
@@ -53,8 +49,6 @@ public class InstantiateAndScheduleSimpleJob : MonoBehaviour
         // ! Only main thread can schedule and complete jobs
         // ! main thread should not access data that is used by a currently scheduled job (ex: in this case we cannot access intArray between .Schedule() and .Complete())
         handle.Complete();
-
-        //LogIntNativeArrayItems(job.Numbers, $"AFTER SINGLE JOB");
     }
 
     private void ScheduleSeveralJobs(NativeArray<int> intArray)
