@@ -40,9 +40,7 @@ public class EnemyBehavior : MonoBehaviour
         if (Vector3.Distance(transform.position, playerTransform.position) < tooCloseDistance)
         {
             Vector3 positionPrevision = transform.position + (dirPlayerToThis / 2);
-            positionPrevisionObj.transform.position = positionPrevision;
-
-            Debug.Log(positionPrevision);
+            if(showDebugObj) positionPrevisionObj.transform.position = positionPrevision;
 
             Vector3 direction;
             ;
@@ -96,10 +94,16 @@ public class EnemyBehavior : MonoBehaviour
                 direction = dirPlayerToThis;
             }
 
-            dirObj.transform.position = transform.position + (direction/2);
+            if (showDebugObj) dirObj.transform.position = transform.position + (direction/2);
             Vector3 nextPosition = transform.position + (direction * speed * Time.deltaTime);
             transform.position = nextPosition;
         }
+        //else if (Vector3.Distance(transform.position, playerTransform.position) > 8f)
+        //{
+        //    Vector3 dirThisToPlayer = (playerTransform.position - transform.position).normalized;
+        //    Vector3 nextPosition = transform.position + (dirThisToPlayer * speed * Time.deltaTime);
+        //    transform.position = nextPosition;
+        //}
     }
 
     private Vector3 GetPerpendicularClockwiseVector(Vector3 initialVector)

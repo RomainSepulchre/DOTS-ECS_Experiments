@@ -827,9 +827,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   numberToSpawn: 10000
   enemyToSpawn: {fileID: 6633739473973131113, guid: 11f4906505a36ad4682734b3fe2411ab, type: 3}
+  speed: 5
+  tooCloseDistance: 1
   xAreaLimit: 10.1
   yAreaLimit: 5.6
-  enemies: []
+  useEnemyBehavior: 0
 --- !u!1001 &3980881134461439246
 PrefabInstance:
   m_ObjectHideFlags: 0
