@@ -280,11 +280,12 @@ Cyclic dependencies (A depends from B and B depends from A) is something that mu
 
 ## [Parralel jobs](https://docs.unity3d.com/6000.0/Documentation/Manual/job-system-parallel-for-jobs.html)
 
-One task can only be done by one job, however there is time where we need to perform the same operation on a lots of objects. Instead of running one big job that repeat the same operation on all the items sequentially, its more efficient to split the work in different batch and run theses batch on several worker thread conccurently. To do this we can use the IJobParralelFor interface when creating our job.
+One task can only be done by one job, however there is time where we need to perform the same operation on a lots of objects. Instead of running one big job that repeat the same operation on all the items sequentially, it's more efficient to split the work in different batch and run theses batch on several worker thread conccurently. To do this, there is a specific types of jobs: parralel jobs. 
 
-### IJobParralelFor
+### [IJobParralelFor](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Unity.Jobs.IJobParallelFor.html)
 
-*IJobParralelFor* implements an *Execute()* method like *IJob*. However, contrary to *IJob* which only calls the *Execute()* method once, with *IJobParralelFor* *Execute()* will be invoked once per item in the NativeArray we used as data source. Each call will process a single element based on an index parameter passed by the execute function.
+*IJobParralelFor* is an interface just like IJob and when creating our parralel job we will implements it in our struct instead of Ijob.
+*IJobParralelFor* adds an *Execute()* method like *IJob*. However, contrary to *IJob* which only calls the *Execute()* method once, with *IJobParralelFor* *Execute()* will be invoked once per item in the NativeArray we used as data source. Each call will process a single element based on an index parameter passed by the execute function.
 Since the goal of *IJobParralelFor* is to iterate over a NativeArray we also must provide a NativeArray of data when we create a parralel job.
 
 #### Create a parrallel job
@@ -306,13 +307,13 @@ public struct MyParrallelJob : IJobParallelFor // Instead of using IJob, we use 
 }
 ```
 
-### Instantiate, schedule and complete a parralel job
+#### Instantiate, schedule and complete a parralel job
 
 Most of the process is the same for a parralel job and a normal job. The main differences are the parameters of the *.Schedule()* method.  
 
 The *.Schedule()* requires two parameters:
 1.Length of the array (how many for-each iterations to perform)
-2.Batch size, how many item will there be in one batch (every batch will be able to run on a different worker)
+2.Batch Count, how many item will there be in one batch (every batch will be able to run on a different worker)
 
 > Example: if we have 246 items, and set a batch size of 100, all items will be processed in 3 batches (batch 1: 0-99, batch 2: 100-199, batch 3: 200-246)
 
@@ -336,9 +337,18 @@ intArray.Dispose();
 ```
 
 #### Batch size tips
+
 - When there is a lot of work in each iteration then a value of 1 can be sensible.
 - When there is very little work values of 32 or 64 can make sense.
-- It is needed to experiment and profile to find the best batch size in term of performance because with simple computation the bottleneck could be memory access (https://youtu.be/jdW66hA-Qu8?si=l12_EYkXmcGaDnl2&t=610).
+- It is needed to experiment and profile to find the best batch size in term of performance because with simple computation the bottleneck could be memory access (https://youtu.be/jdW66hA-Qu8?si=l12_EYkXmcGaDnl2&t=610). **Starting at 1 and increasing the batch count until there are negligible performance gains is a good strategy**.
+
+### [IJobParallelForTransform](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Jobs.IJobParallelForTransform.html)
+
+This seems to work mostly like *IJobParralelFor* but instead of passing an array length and a batch count, we only need to pass a [*TransformAccessArray*](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Jobs.TransformAccessArray.html). A *TransformAccessArray* is an array of [TransformAccess](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Jobs.TransformAccess.html) and is needed to be able to access the transform data in a job.
+
+I still have some question about this adn I need to test it in Unity:
+- Is this compatible with the Burst compiler?
+- Why is it part of Unity.Engine.Jobs namespace and not Unity.Jobs like IJobParallelFor?
 
 ### Avoid long running parrallel job taking all threads
 
