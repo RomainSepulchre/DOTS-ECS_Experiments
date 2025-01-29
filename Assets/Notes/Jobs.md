@@ -1,5 +1,13 @@
 # Unity Jobs
 
+## Resources links
+
+- [EntityComponentSystemSamples github repository](https://github.com/Unity-Technologies/EntityComponentSystemSamples/tree/master?tab=readme-ov-file)
+- [Document Unity Job System 101](https://docs.google.com/document/d/1gtXwUwsuQTfpBUmdFd5ieZaL7v3UdYTKq9H5P0M57Mg/edit?tab=t.0) 
+- [Unity job system video](https://www.youtube.com/watch?v=jdW66hA-Qu8)
+- [Unity job system documentation](https://docs.unity3d.com/6000.0/Documentation/Manual/job-system.html)
+- [Watch this if you've never tried JOBS in Unity (Tutorial)](https://www.youtube.com/watch?v=6gFyoMoa8dM)
+
 ## What is the job system ?
 
 A job is a small unit of work that aim to complete a specific task and that can run on a worker thread. The goal of the job system is to use multithreading and takes advantage of the multiple cores of modern CPU to reduce the amount of operation runned on the main thread by running the jobs on worker threads parrallely from the main thread.
@@ -16,7 +24,7 @@ While a job is running the **main thread cannot access it's content** and **two 
 
 **For improved performance, jobs must be combined with the [Burst Compiler](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/index.html) which is specifically designed to compile jobs.**
 
-### Jobs parameters
+### Jobs data and parameters
 
 Just like a method call, a job receives parameters and operates on data. However, to be able to use the Burst Compiler, jobs must use unmanaged objects so we need to use specific [thread safe types](https://docs.unity3d.com/6000.0/Documentation/Manual/job-system-native-container.html). For example instead of using a standard array of int (*int[]*), we will use native array (*NativeArray<int>*) from [Unity.Collections](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Unity.Collections.NativeArray_1.html) namespace.  
 
@@ -24,15 +32,37 @@ Just like a method call, a job receives parameters and operates on data. However
 
 - [Blittable types](https://learn.microsoft.com/en-us/dotnet/framework/interop/blittable-and-non-blittable-types): type that has a representation both in managed and unmanaged memory (ex: *Byte*, *Int16*, *Int32*, *Single*, *Double*, ...).
 - [Unity.Collections](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Unity.Collections.NativeArray_1.html) namespace: Provide native containers which are unmanaged data structures that can be used in jobs and burst-compiled code (ex: *NativeArray<T>*, *NativeSlice<T>*). The [Collection package](https://docs.unity3d.com/Packages/com.unity.collections@2.5/manual/index.html) also add additional NativeContainer such as *NativeList<T>*.
+- [Unity.Mathematics package](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/manual/index.html): C# math library that provides vector types and math functions that have a shader-like syntax. It is used by the burst compiler to compile C#/IL code into highly efficient native code.
 - It's possible to [create our own custom native container](https://docs.unity3d.com/6000.0/Documentation/Manual/job-system-custom-nativecontainer.html) using [*[NativeContainer]* attribute](https://docs.unity3d.com/6000.0/Documentation/Manual/job-system-custom-nativecontainer-example.html).
 
-#### **Managed and unmanaged objects?**  
+> With Native collection types, the developer is responsible for calling *.Dispose()* on the unmanaged collection once it's no longer needed. Neglecting to dispose a collection will create a memory leak.
+
+#### Data access general rules
+
+- A job should not perform I/O.
+- A job should not access managed objects.
+- A job should only access static fields if they are read only.
+- Scheduling a job create a private copy of the struct that will be visible only to the running job, so any modification on the fields of the job will be visible only within itself. However, if a field of job contains pointers or references, the modification of this external data by the job can be visible outside of the job.
+
+#### Managed and unmanaged objects?
 
 - Managed objects: Pure .Net code managed by runtime and under its control, will be handled by the garbage collector.
 - Unmanaged objects: Code not managed by the runtime, the garbage collector won't know how to manage it.
 
 > **Is it possible to use managed object in a job?**  
 > ! It's not strictly impossible to use managed objects in jobs but doing it safely require a special care so normally jobs show avoid accessing managed objects. Also, Burst Compiler doesn't support managed objects so the job won't be able to use it.
+
+#### Allocator (Unmanged collections)
+
+When we instantiate an unmanaged collection we must define a type of allocator. Every type of allocator will organize and track their memory differently.  
+```C#
+NativeArray<int> myArray = new NativeArray<int>(arrayLength, Allocator.TempJob)
+```  
+The most commons allocators are:
+
+- **Temp**: the fastest allocator, it is used for short-lived allocations and will only last one frame, we don't even need to call *.Dispose()* on it. A collection with that allocator **cannot be passed into jobs**, however **it is safe to use within jobs so it possible to create temp allocated NativeArray inside a job** (Temp allocation will be disposed automatically at the end of the job).
+- **TempJob**: middle speed, slower than Temp allocation but faster than Persistent. This allocator **can be passed into jobs** and **must be manually disposed (call *.Dispose()*) within 4 frames after allocation** otherwise safety checks will throw an exception.
+- **Persistent**: slowest allocator, it is used for indefinite lifetime allocations and we must call *.Dispose()* to deallocate the collection once we no longer need it. **It can be passed into jobs**.
 
 #### Other remarks
 
