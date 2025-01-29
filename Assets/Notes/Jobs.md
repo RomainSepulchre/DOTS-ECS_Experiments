@@ -7,6 +7,8 @@
 - [Unity job system video](https://www.youtube.com/watch?v=jdW66hA-Qu8)
 - [Unity job system documentation](https://docs.unity3d.com/6000.0/Documentation/Manual/job-system.html)
 - [Watch this if you've never tried JOBS in Unity (Tutorial)](https://www.youtube.com/watch?v=6gFyoMoa8dM)
+- [Unity.Collections cheat sheet](https://github.com/Unity-Technologies/EntityComponentSystemSamples/blob/master/EntitiesSamples/Docs/cheatsheet/collections.md)
+- [Unity.Mathematics cheat sheet](https://github.com/Unity-Technologies/EntityComponentSystemSamples/blob/master/EntitiesSamples/Docs/cheatsheet/mathematics.md)
 
 ## What is the job system ?
 
