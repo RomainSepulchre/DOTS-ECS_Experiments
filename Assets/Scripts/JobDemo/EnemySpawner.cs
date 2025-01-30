@@ -110,6 +110,13 @@ public class EnemySpawner : MonoBehaviour
         tfAccessArray.Dispose();
     }
 
+    //private void OnGUI()
+    //{
+    //    GUIStyle style = GUI.skin.GetStyle("textArea");
+    //    style.fontSize = 16;
+    //    GUI.Box(new Rect(10, 10, 250, 90), $" Items count: {numberToSpawn}\n Job enabled: {useJobs}\n Manager handle behavior: {useManagerForEnemyBehavior}\n Physics enabled: {enablePhysics}", style);
+    //}
+
     private void ProcessEnemyBehaviorNoJob(GameObject enemy) // Remove Monobehavior overhead by calculating everything in one single manager behavior
     {
         Vector3 dirPlayerToEnemy = (enemy.transform.position - playerTransform.position).normalized;
