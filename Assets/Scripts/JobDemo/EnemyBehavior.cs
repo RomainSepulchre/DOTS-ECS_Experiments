@@ -57,6 +57,8 @@ public class EnemyBehavior : MonoBehaviour
             JobHandle handle = job.Schedule();
 
             handle.Complete();
+
+            // Update position with position calculaated in the job 
             transform.position = job.Position[0];
 
             positionArray.Dispose();

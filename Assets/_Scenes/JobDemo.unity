@@ -1388,6 +1388,14 @@ PrefabInstance:
       value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 1483141230917321308, guid: 11f4906505a36ad4682734b3fe2411ab, type: 3}
+      propertyPath: useJobs
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1483141230917321308, guid: 11f4906505a36ad4682734b3fe2411ab, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1483141230917321308, guid: 11f4906505a36ad4682734b3fe2411ab, type: 3}
       propertyPath: tooCloseDistance
       value: 1
       objectReference: {fileID: 0}
