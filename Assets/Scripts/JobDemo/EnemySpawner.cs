@@ -1,23 +1,37 @@
 using System.Collections.Generic;
+using Unity.Burst;
+using Unity.Jobs;
 using UnityEngine;
+using UnityEngine.Jobs;
 
+[BurstCompile]
 public class EnemySpawner : MonoBehaviour
 {
     [SerializeField] private int numberToSpawn;
     [SerializeField] private GameObject enemyToSpawn;
+    [SerializeField] private Transform enemiesParent;
     [SerializeField] private float speed;
     [SerializeField] private float tooCloseDistance;
     [SerializeField] private float xAreaLimit;
     [SerializeField] private float yAreaLimit;
 
-    [SerializeField] private bool useEnemyBehavior;
+    [SerializeField] private bool useManagerForEnemyBehavior;
+    [SerializeField] private bool useJobs;
+    [SerializeField] private bool enablePhysics;
 
     private List<GameObject> enemies = new List<GameObject>();
+    private TransformAccessArray tfAccessArray;
+    private Transform[] enemiesTransform;
     private Transform playerTransform;
+    private bool awakeDone = false;
+
+    //private JobHandle enemiesJobHandle;
 
     private void Awake()
     {
         playerTransform = GameObject.FindGameObjectWithTag("Player").transform;
+
+        enemiesTransform = new Transform[numberToSpawn];
 
         // Spawns enemies
         for (int i = 0; i < numberToSpawn; i++)
@@ -25,26 +39,75 @@ public class EnemySpawner : MonoBehaviour
             float randomX = Random.Range(-xAreaLimit, xAreaLimit);
             float randomY = Random.Range(-yAreaLimit, yAreaLimit);
             Vector3 randomPosition = new Vector3(randomX, randomY, 0);
-            GameObject newEnemy = Instantiate(enemyToSpawn, randomPosition, Quaternion.identity);
+            GameObject newEnemy = Instantiate(enemyToSpawn, randomPosition, Quaternion.identity, enemiesParent);
             enemies.Add(newEnemy);
+            enemiesTransform[i] = newEnemy.transform;
 
-            if (useEnemyBehavior == false)
+            var behavior = newEnemy.GetComponent<EnemyBehavior>();
+            if (useManagerForEnemyBehavior)
             {
-                newEnemy.GetComponent<EnemyBehavior>().enabled = false;
+                behavior.enabled = false;
             }
+            else
+            {
+                behavior.useJobs = useJobs;
+            }
+
+            if(enablePhysics == false)
+            {
+                Destroy(newEnemy.GetComponent<Rigidbody2D>());
+            }
+
         }
+
+        tfAccessArray = new TransformAccessArray(enemiesTransform);
+
+        awakeDone = true;
     }
 
     void Update()
     {
-        if (useEnemyBehavior) return;
-        else
+        if(awakeDone)
         {
-            foreach (GameObject enemy in enemies)
+            if (useManagerForEnemyBehavior == false) return;
+            else
             {
-                ProcessEnemyBehaviorNoJob(enemy);
+                if (useJobs)
+                {
+                    EnemiesBehaviorJob job = new EnemiesBehaviorJob()
+                    {
+                        PlayerPosition = playerTransform.position,
+                        Speed = speed,
+                        TooCloseDistance = tooCloseDistance,
+                        XAreaLimit = xAreaLimit,
+                        YAreaLimit = yAreaLimit,
+                        DeltaTime = Time.deltaTime
+                    };
+
+                    //enemiesJobHandle = job.Schedule(tfAccessArray);
+                    JobHandle handle = job.Schedule(tfAccessArray);
+                    handle.Complete();
+                }
+                else
+                {
+                    foreach (GameObject enemy in enemies)
+                    {
+                        ProcessEnemyBehaviorNoJob(enemy);
+                    }
+                }
             }
         }
+    }
+
+    //private void LateUpdate()
+    //{
+    //    enemiesJobHandle.Complete();
+    //}
+
+    private void OnDestroy()
+    {
+        // Dispose TransformAccessArray
+        tfAccessArray.Dispose();
     }
 
     private void ProcessEnemyBehaviorNoJob(GameObject enemy) // Remove Monobehavior overhead by calculating everything in one single manager behavior
