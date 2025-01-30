@@ -8,8 +8,8 @@ using UnityEngine.Jobs;
 public class EnemySpawner : MonoBehaviour
 {
     [SerializeField] private int numberToSpawn;
-    [SerializeField] private GameObject enemyToSpawn;
-    [SerializeField] private Transform enemiesParent;
+    [SerializeField] private GameObject enemyToSpawnWithPhysics;
+    [SerializeField] private GameObject enemyToSpawnNoPhysics;
     [SerializeField] private float speed;
     [SerializeField] private float tooCloseDistance;
     [SerializeField] private float xAreaLimit;
@@ -39,7 +39,7 @@ public class EnemySpawner : MonoBehaviour
             float randomX = Random.Range(-xAreaLimit, xAreaLimit);
             float randomY = Random.Range(-yAreaLimit, yAreaLimit);
             Vector3 randomPosition = new Vector3(randomX, randomY, 0);
-            GameObject newEnemy = Instantiate(enemyToSpawn, randomPosition, Quaternion.identity, enemiesParent);
+            GameObject newEnemy = Instantiate( enablePhysics ? enemyToSpawnWithPhysics : enemyToSpawnNoPhysics, randomPosition, Quaternion.identity);
             enemies.Add(newEnemy);
             enemiesTransform[i] = newEnemy.transform;
 
@@ -50,12 +50,8 @@ public class EnemySpawner : MonoBehaviour
             }
             else
             {
+                behavior.enabled = true;
                 behavior.useJobs = useJobs;
-            }
-
-            if(enablePhysics == false)
-            {
-                Destroy(newEnemy.GetComponent<Rigidbody2D>());
             }
 
         }
@@ -127,7 +123,6 @@ public class EnemySpawner : MonoBehaviour
         {
             Vector3 positionPrevision = enemy.transform.position + (dirPlayerToEnemy / 2);
             Vector3 direction;
-            ;
 
             if (positionPrevision.x >= xAreaLimit) // Reach limit on the right
             {

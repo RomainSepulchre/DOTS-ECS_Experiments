@@ -380,6 +380,8 @@ intArray.Dispose();
 
 > One weird thing to note: **this is part of Unity.Engine.Jobs namespace** whereas other types of jobs are part of Unity.Jobs namespace.
 
+> **! IJobParallelForTransform only splits the roots, if all the transforms have the same parent, they will execute in the same thread.**
+
 #### Create a parrallel transform job
 
 ``` C#
