@@ -376,11 +376,48 @@ intArray.Dispose();
 
 ### [IJobParallelForTransform](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Jobs.IJobParallelForTransform.html)
 
-This seems to work mostly like *IJobParralelFor* but instead of passing an array length and a batch count, we only need to pass a [*TransformAccessArray*](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Jobs.TransformAccessArray.html). A *TransformAccessArray* is an array of [TransformAccess](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Jobs.TransformAccess.html) and is needed to be able to access the transform data in a job.
+*IJobParallelForTransform* works mostly like *IJobParralelFor* but instead of passing an array length and a batch count, we only need to pass a [*TransformAccessArray*](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Jobs.TransformAccessArray.html). A *TransformAccessArray* is an array of [TransformAccess](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Jobs.TransformAccess.html) and is needed to be able to access the transform data in a job. **Just like the other types of job, this is compatible with BurstCompiler**.
 
-I still have some question about this adn I need to test it in Unity:
-- Is this compatible with the Burst compiler?
-- Why is it part of Unity.Engine.Jobs namespace and not Unity.Jobs like IJobParallelFor?
+> One weird thing to note: **this is part of Unity.Engine.Jobs namespace** whereas other types of jobs are part of Unity.Jobs namespace.
+
+#### Create a parrallel transform job
+
+``` C#
+using Unity.Burst;
+using Unity.Jobs;
+using UnityEngine.Jobs;
+using Unity.Mathematics;
+
+[BurstCompile] // Enable burst compilation
+public struct MyTransformParrallelJob : IJobParallelForTransform // Instead of using IJob, we use IJobParallelForTransform interface
+{
+    public void Execute(int index, TransformAccess transform)
+    {
+        transform.position = float3.zero;
+    }
+}
+```
+
+#### Instantiate, schedule and complete a transform parralel job
+
+``` C#
+// Declare a TransformAccesArray
+TransformAccessArray transformAccessArray = new TransformAccessArray(arrayOfTransform); // arrayOfTransform is a classic array of transform that has been initialized before
+
+//  Instantiate the parralel job
+var job = new MyTransformParrallelJob { };
+
+// Schedule the parralel job
+JobHandle handle = job.Schedule(transformAccessArray); // We need to pass the array length and a btahc size
+
+// ... some other code that runs until we need the result of our job
+
+// Complete the job
+handle.Complete(); 
+
+// Dispose transformAccessArray manually
+transformAccessArray.Dispose()
+```
 
 ### Avoid long running parrallel job taking all threads
 
