@@ -1,9 +1,8 @@
-using NUnit.Framework;
-using System.Collections.Generic;
+
 using Unity.Collections;
 using Unity.Jobs;
+using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Mathematics;
-using UnityEditor;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -64,6 +63,7 @@ public class TargetAndSeekerManager : MonoBehaviour
                 break;
 
             case DemoMode.ParrellelJob:
+                FindNearest_ParrallelJob();
                 break;
 
             case DemoMode.ParrallelJobOptimized:
@@ -96,7 +96,6 @@ public class TargetAndSeekerManager : MonoBehaviour
 
     private void FindNearest_SingleThreadJob()
     {
-
         NativeArray<float3> seekersPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.TempJob);
         NativeArray<float3> targetsPosArray = new NativeArray<float3>(targetsTransform.Length, Allocator.TempJob);
         NativeArray<float3> nearestPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.TempJob);
@@ -120,6 +119,49 @@ public class TargetAndSeekerManager : MonoBehaviour
         };
 
         JobHandle handle = job.Schedule();
+
+        handle.Complete();
+
+        for (int i = 0; i < seekersPosArray.Length; i++)
+        {
+            Debug.DrawLine(seekersPosArray[i], nearestPosArray[i], Color.white);
+        }
+
+        seekersPosArray.Dispose();
+        targetsPosArray.Dispose();
+        nearestPosArray.Dispose();
+    }
+
+    private void FindNearest_ParrallelJob()
+    {
+        NativeArray<float3> seekersPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.TempJob);
+        NativeArray<float3> targetsPosArray = new NativeArray<float3>(targetsTransform.Length, Allocator.TempJob);
+        NativeArray<float3> nearestPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.TempJob);
+
+        // Fill Native float3 arrays with positions from the transform arrays
+        for (int i = 0; i < seekersTransform.Length; i++)
+        {
+            seekersPosArray[i] = seekersTransform[i].position;
+        }
+
+        for (int i = 0; i < targetsTransform.Length; i++)
+        {
+            targetsPosArray[i] = targetsTransform[i].position;
+        }
+
+        FindNearestParrallelJob job = new FindNearestParrallelJob()
+        {
+            SeekersPos = seekersPosArray,
+            TargetsPos = targetsPosArray,
+            NearestPos = nearestPosArray
+        };
+
+
+        //int numBatches = Mathf.Max(1, Mathf.RoundToInt(JobsUtility.JobWorkerCount * 0.75f)); // Use 75 % of the worker thread
+        int numBatches = Mathf.Max(1, JobsUtility.JobWorkerCount); // Use maximum of worker thread since i'm sure this won't block any other jobs
+        int batchSize = seekersPosArray.Length / numBatches;
+
+        JobHandle handle = job.Schedule(seekersPosArray.Length, batchSize);
 
         handle.Complete();
 
