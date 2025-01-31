@@ -29,10 +29,13 @@ public class Seeker : MonoBehaviour
 
     private void LateUpdate()
     {
-        if(TargetAndSeekerManager.targetsTransform != null)
+        if(TargetAndSeekerManager.targetsTransform != null && TargetAndSeekerManager.instance != null)
         {
-            Transform nearestTarget = FindNearestTarget(TargetAndSeekerManager.targetsTransform);
-            Debug.DrawLine(transform.position, nearestTarget.position, Color.white);
+            if(TargetAndSeekerManager.instance.demoMode == TargetAndSeekerManager.DemoMode.MainThread)
+            {
+                Transform nearestTarget = FindNearestTarget(TargetAndSeekerManager.targetsTransform);
+                Debug.DrawLine(transform.position, nearestTarget.position, Color.white);
+            }
         }
     }
 
