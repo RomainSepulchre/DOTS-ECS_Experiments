@@ -16,10 +16,11 @@ public struct FindNearestOptimizedParrallelJob : IJobParallelFor
 
         // Use Binary search to get closest X coordinate
         int startIndex = TargetsPos.BinarySearch(seekerPos, new XAxisComparer { });
-     
-        // When no precise match is found, BinarySearch returns the bitwise negation of the last-searched offset.
-        // So when startIdx is negative, we flip the bits again, but we then must ensure the index is within bounds.
-        if (startIndex < 0) startIndex = ~startIndex; // TODO: Do some test with this to understand better what's the result when start Index is negative
+
+        // When no precise match is found, BinarySearch returns the bitwise negation of the last-searched index.
+        // So when startIndex is negative, we flip the bits back to getthe last-searched index, then must ensure the index is within bounds.
+        if (startIndex < 0) startIndex = ~startIndex;
+        // If startIndex is bigger or equal to the length of the array it means there is no bigger value than our search target so we can start at the last index.
         if (startIndex >= TargetsPos.Length) startIndex = TargetsPos.Length - 1;
 
         float3 nearestTargetPos = TargetsPos[startIndex];
