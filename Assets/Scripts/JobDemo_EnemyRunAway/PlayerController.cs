@@ -1,32 +1,35 @@
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+namespace Jobs.EnemyRunAwayDemo
 {
-    [SerializeField] private float speed;
-
-    [SerializeField] private float xAreaLimit;
-    [SerializeField] private float yAreaLimit;
-
-    void Update()
+    public class PlayerController : MonoBehaviour
     {
-        if(Input.GetKey(KeyCode.UpArrow) && transform.position.y < yAreaLimit)
-        {
-            transform.position = transform.position + (transform.up * speed * Time.deltaTime);
-        }
+        [SerializeField] private float speed;
 
-        if (Input.GetKey(KeyCode.DownArrow) && transform.position.y > -yAreaLimit)
-        {
-            transform.position = transform.position + (-transform.up * speed * Time.deltaTime);
-        }
-        
-        if (Input.GetKey(KeyCode.LeftArrow) && transform.position.x > -xAreaLimit)
-        {
-            transform.position = transform.position + (-transform.right * speed * Time.deltaTime);
-        }
+        [SerializeField] private float xAreaLimit;
+        [SerializeField] private float yAreaLimit;
 
-        if (Input.GetKey(KeyCode.RightArrow) && transform.position.x < xAreaLimit)
+        void Update()
         {
-            transform.position = transform.position + (transform.right * speed * Time.deltaTime);
+            if (Input.GetKey(KeyCode.UpArrow) && transform.position.y < yAreaLimit)
+            {
+                transform.position = transform.position + (transform.up * speed * Time.deltaTime);
+            }
+
+            if (Input.GetKey(KeyCode.DownArrow) && transform.position.y > -yAreaLimit)
+            {
+                transform.position = transform.position + (-transform.up * speed * Time.deltaTime);
+            }
+
+            if (Input.GetKey(KeyCode.LeftArrow) && transform.position.x > -xAreaLimit)
+            {
+                transform.position = transform.position + (-transform.right * speed * Time.deltaTime);
+            }
+
+            if (Input.GetKey(KeyCode.RightArrow) && transform.position.x < xAreaLimit)
+            {
+                transform.position = transform.position + (transform.right * speed * Time.deltaTime);
+            }
         }
-    }
+    } 
 }

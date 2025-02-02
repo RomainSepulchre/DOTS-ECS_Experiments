@@ -4,31 +4,34 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 
-[BurstCompile]
-public struct FindNearestSingleThreadJob : IJob
+namespace Jobs.TargetAndSeekerDemo
 {
-    [ReadOnly] public NativeArray<float3> SeekersPos;
-    [ReadOnly] public NativeArray<float3> TargetsPos;  
-    public NativeArray<float3> NearestPos;
-
-    public void Execute()
+    [BurstCompile]
+    public struct FindNearestSingleThreadJob : IJob
     {
-        for (int i = 0; i < SeekersPos.Length; i++)
+        [ReadOnly] public NativeArray<float3> SeekersPos;
+        [ReadOnly] public NativeArray<float3> TargetsPos;
+        public NativeArray<float3> NearestPos;
+
+        public void Execute()
         {
-            float distWithNearestSq = float.MaxValue;
-
-            foreach (float3 targetPos in TargetsPos)
+            for (int i = 0; i < SeekersPos.Length; i++)
             {
-                // Use squared distance instead of distance because it's cheaper (no need to compute a square root)
-                // Performance gain for this job with 1000 seekers and 1000 targets: 1.89-2ms -> 1.22-1.30ms
-                float distWithTargetSq = math.distancesq(SeekersPos[i], targetPos);
+                float distWithNearestSq = float.MaxValue;
 
-                if(distWithTargetSq < distWithNearestSq)
+                foreach (float3 targetPos in TargetsPos)
                 {
-                    NearestPos[i] = targetPos;
-                    distWithNearestSq = distWithTargetSq;
+                    // Use squared distance instead of distance because it's cheaper (no need to compute a square root)
+                    // Performance gain for this job with 1000 seekers and 1000 targets: 1.89-2ms -> 1.22-1.30ms
+                    float distWithTargetSq = math.distancesq(SeekersPos[i], targetPos);
+
+                    if (distWithTargetSq < distWithNearestSq)
+                    {
+                        NearestPos[i] = targetPos;
+                        distWithNearestSq = distWithTargetSq;
+                    }
                 }
             }
         }
-    }
+    } 
 }

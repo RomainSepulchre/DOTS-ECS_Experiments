@@ -1,10 +1,13 @@
 using System.Collections.Generic;
 using Unity.Mathematics;
 
-public struct XAxisComparer : IComparer<float3>
+namespace Jobs.TargetAndSeekerDemo
 {
-    public int Compare(float3 a, float3 b)
+    public struct XAxisComparer : IComparer<float3>
     {
-        return a.x.CompareTo(b.x);
-    }
+        public int Compare(float3 a, float3 b)
+        {
+            return a.x.CompareTo(b.x);
+        }
+    } 
 }

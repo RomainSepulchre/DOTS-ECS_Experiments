@@ -1,29 +1,32 @@
 using UnityEngine;
 
-public class Target : MonoBehaviour
+namespace Jobs.TargetAndSeekerDemo
 {
-    [SerializeField] private float speed;
-
-    private Vector3 direction;
-
-    private float timer = 0;
-
-    void Start()
+    public class Target : MonoBehaviour
     {
-        direction = new Vector3(Random.Range(-1f, 1f), 0, Random.Range(-1f, 1f)).normalized;
-        timer = Random.Range(1f, 5f);
-    }
+        [SerializeField] private float speed;
 
-    void Update()
-    {
-        timer -= Time.deltaTime;
-        if (timer <= 0)
+        private Vector3 direction;
+
+        private float timer = 0;
+
+        void Start()
         {
             direction = new Vector3(Random.Range(-1f, 1f), 0, Random.Range(-1f, 1f)).normalized;
             timer = Random.Range(1f, 5f);
         }
 
-        // Update position
-        transform.position = transform.position + (direction * speed * Time.deltaTime);
-    }
+        void Update()
+        {
+            timer -= Time.deltaTime;
+            if (timer <= 0)
+            {
+                direction = new Vector3(Random.Range(-1f, 1f), 0, Random.Range(-1f, 1f)).normalized;
+                timer = Random.Range(1f, 5f);
+            }
+
+            // Update position
+            transform.position = transform.position + (direction * speed * Time.deltaTime);
+        }
+    } 
 }
