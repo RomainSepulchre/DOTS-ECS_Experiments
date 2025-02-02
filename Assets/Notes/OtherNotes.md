@@ -4,7 +4,7 @@
 
 - [Array binary search](#array-binary-search)
 - [Comparer, IComparer<T> interfaces](#icomparer-icomparer-comparer-and-icomparable)
-- [Bitwise and shift operation](#bitwise-and-shift-operations)
+- [Bitwise and shift operations](#bitwise-and-shift-operations)
 - [Other things to check later](#other-things-to-check-later)
 
 ## [Array binary search](https://learn.microsoft.com/en-us/dotnet/api/system.array.binarysearch?view=net-9.0)
@@ -88,7 +88,7 @@ Search(startIndex - 1, -1, -1, ref currentNearestValue, ref currentNearestIndex)
 Console.WriteLine($"Nearest value is {currentNearestValue} at index {currentNearestIndex}");
 ```
 
-## IComparer, IComparer<T>, Comparer<T> and IComparable<T>()
+## IComparer, IComparer<T>, Comparer<T> and IComparable<T>
 
 *IComparer* and *IComparer<T>* are interfaces that implement a *Compare()* method. The object that implement these interface can be used to give instructions to sort values or to do a [binary search](#array-binary-search) in an array.  
 *Comparer<T>* works the same way but it's a class instead of an interface so you need to derive from it and implement its abstract method. *Comparer<T>* class implements *IComparer<T>* interface so it has all it's features.
@@ -238,15 +238,132 @@ static void Main(string[] args)
 
 ## [Bitwise and shift operations](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/bitwise-and-shift-operators)
 
-### Bitwise OR (|) 
-
-### Bitwise AND (&)
+> **Int32 as bit reminder**  
+> As its name suggests, *Int32* is defined by 32 bits(0 or 1). Since an *int32* can be signed, the leftmost bit tells if the int is positive or negative (0 for positive and 1 negative).   
+> When the int is positive we add the bit value if the is set to 1 but when the int is negative the bit logic is inverted: 0 means we substract the bit value and 1 means we don't.
+> Since 0 cannot be signed negative value start at -1, so the minimum value of an *int32* is -2,147,483,648 and its maximum value is 2,147,483,647 (one less than minimum value).  
+> ``` c#
+> int a = 1;      // in binary: 00000000000000000000000000000001
+> int b = -1;     // in binary: 11111111111111111111111111111111
+> int c = 26548;  // in binary: 00000000000000000110011110110100
+> int d = -26548; // in binary: 11111111111111111001100001001100 (it's not the exact opposite of 26548 bit representation since negative number start at -1)
+> ```
 
 ### Bitwise NOT (~)
 
+Also called a **bit flip**. Reverse every bit, ones become zeroes and zeroes become ones.  
+Once its bits are reversed, a int value will always be: *((value before the reverse with its sign reversed) - 1)* since negative values start at -1.
+
+``` c#
+int a = 97562; // 00000000000000010111110100011010
+a = ~a;        // 11111111111111101000001011100101
+Console.WriteLine(a); // b = -97563
+a = ~a; // Reverse a back to inital state
+Console.WriteLine(a); // c = 97562
+```
+
+### Bitwise shifts (<< and >>)
+
+#### Left shift (<<)
+
+Move the bits to the left by a number of bits specified at the right of the shift operator. The leftmost bits that are moved out of the 32bits are discarded and zeroes are added in the rightmost empty bit positions.
+
+``` c#
+int a = 1353806217; // 01010000101100010111000110001001
+Console.WriteLine(Convert.ToString(a, toBase: 2).PadLeft(32, '0')); // Write a in binary with leading zeros in the empty bit positions
+a = a << 6;         // 00101100010111000110001001000000
+Console.WriteLine(Convert.ToString(a, toBase: 2).PadLeft(32, '0'));
+// the 6 leftmost bits "010100" have been discarded and 6 zeros "000000" have been added on the right
+```
+
+#### Right Shift (>>)
+
+Move the bits to the right by a number of bits specified at the right of the shift operator. The rightmost bits that are moved out of the 32bits are discarded.
+For the empty bits positions on the left side it depends on the type of the object:
+
+- int, long: the value of the sign bit fill the empty bit positions.
+- uint, long: zeroes are added in the leftmost empty bit positions.
+
+``` c#
+int a = 37564; // 00000000000000001001001010111100
+Console.WriteLine(Convert.ToString(a, toBase: 2).PadLeft(32, '0')); // Write a in binary with leading zeros in the empty bit positions
+a = a >> 3;    // 00000000000000000001001001010111
+Console.WriteLine(Convert.ToString(a, toBase: 2).PadLeft(32, '0')); 
+// the 3 rightmost bits "100" have been discarded. The sign bit was a 0 so 3 zeroes have been added on the left
+
+int b = -37564; // 11111111111111110110110101000100
+Console.WriteLine(Convert.ToString(b, toBase: 2).PadLeft(32, '0'));
+b = b >> 3;     // 11111111111111111110110110101000
+Console.WriteLine(Convert.ToString(b, toBase: 2).PadLeft(32, '0'));
+// the 3 rightmost bits "100" have been discarded. The sign bit was a 1 so 3 ones have been added on the left
+```
+
+#### Unsigned Right Shift (>>>)
+
+Since C#11, the unsigned right shift operator has been added. The difference is that the leftmost empty bit positions are always set to 0 regardless of the sign bit value or the object type.
+
+``` c#
+int a = -749143; // 11111111111101001001000110101001
+Console.WriteLine(Convert.ToString(a, toBase: 2).PadLeft(32, '0')); // Write a in binary with leading zeros in the empty bit positions
+a = a >>> 5;     // 00000111111111111010010010001101
+Console.WriteLine(Convert.ToString(a, toBase: 2).PadLeft(32, '0')); 
+// the 5 rightmost bits "01001" have been discarded and 5 zeros "00000" have been added on the left
+```
+
+### Bitwise AND (&)
+
+& operator compare every bit positions in its two operands and set the bit position to 1 in the output only if both operands are set to 1 for this position otherwise the bit position is set to 0.
+
+| Input bit A | Input bit B | Output bit |
+| ----------- | ----------- | ---------- |
+|      1      |      1      |      1     |
+|      1      |      0      |      0     |
+|      0      |      1      |      0     |
+|      0      |      0      |      0     | 
+
+```c#
+// It is possible to assign an int in binary using "0b", when the compiler see 0b in a variable it automatically treat the value behind as binary literal.
+// The "_" after "0b" is not necessary, it is a digit separator used only for readability and ignored by the compiler. 
+int a = 0b_110001001; // 110001001
+int b = 0b_101101101; // 101101101
+int c = a & b;        // 100001001
+Console.WriteLine(Convert.ToString(c, toBase: 2));
+```
+
+### Bitwise OR (|) 
+
+| operator compare every bit positions in its two operands and set the bit position to 1 in the output if at least one of the operands is set to 1 for this position otherwise it is set to 0.
+
+| Input bit A | Input bit B | Output bit |
+| ----------- | ----------- | ---------- |
+|      1      |      1      |      1     |
+|      1      |      0      |      1     |
+|      0      |      1      |      1     |
+|      0      |      0      |      0     | 
+
+```C#
+int a = 0b_1101011010; // 1101011010
+int b = 0b_1010111110; // 1010111110
+int c = a | b;         // 1111111110
+```
+
 ### Bitwise XOR (^)
 
-### Bitwise shifts (>> and <<)
+^ operator compare every bit positions in its two operands and set the bit position to 1 in the output if the operands are set to a different value for this position otherwise it is set to 0.
+
+| Input bit A | Input bit B | Output bit |
+| ----------- | ----------- | ---------- |
+|      1      |      1      |      0     |
+|      1      |      0      |      1     |
+|      0      |      1      |      1     |
+|      0      |      0      |      0     | 
+
+```C#
+int a = 0b_1011100010; // 1011100010
+int b = 0b_0110100010; // 0110100010
+int c = a ^ b;         // 1101000000
+                       // **=*======
+```
 
 ### Resources
 
