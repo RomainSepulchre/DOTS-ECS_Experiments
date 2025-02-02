@@ -128,11 +128,9 @@ static void Main(string[] args)
 
 *Comparer<T>* is not an interface, it is a class that already implements *IComparer<T>* and can be derived from. When a class derive from *Comparer<T>*, you will have to implement the abstract method *Compare()* that work exactly like *Compare()* from *IComparer<T>*.
 
-**Althought it must be used in some cases like a binary search, it's generally recommened to create a class that derived from Comparer<T> instead of implementing IComparer<T>.**
+**It's generally recommened to create a class that derived from Comparer<T> instead of implementing IComparer<T>.**
 
 #### [Comparer<T>]()
-
-> Is it possible to do a binary search with this ?
 
 ```C#
 // Comparer using a custom class Coordinate which just contains some x,y coordinate
