@@ -15,19 +15,20 @@ public struct FindNearestSingleThreadJob : IJob
     {
         for (int i = 0; i < SeekersPos.Length; i++)
         {
-            float3 nearestPos = math.INFINITY;
+            float distWithNearestSq = float.MaxValue;
 
             foreach (float3 targetPos in TargetsPos)
             {
-                float distWithTarget = math.distance(SeekersPos[i], targetPos);
-                float distWithNearest = math.distance(SeekersPos[i], nearestPos);
+                // Use squared distance instead of distance because it's cheaper (no need to compute a square root)
+                // Performance gain for this job with 1000 seekers and 1000 targets: 1.89-2ms -> 1.22-1.30ms
+                float distWithTargetSq = math.distancesq(SeekersPos[i], targetPos);
 
-                if(distWithTarget < distWithNearest)
+                if(distWithTargetSq < distWithNearestSq)
                 {
-                    nearestPos = targetPos;
+                    NearestPos[i] = targetPos;
+                    distWithNearestSq = distWithTargetSq;
                 }
             }
-            NearestPos[i] = nearestPos;
         }
     }
 }

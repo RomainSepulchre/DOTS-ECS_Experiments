@@ -32,6 +32,8 @@ public class TargetAndSeekerManager : MonoBehaviour
     public static Transform[] targetsTransform;
     public static Transform[] seekersTransform;
 
+    // TODO: Using allocator.Persistent native array disposed at on destroy vs using allocator.TempJob
+
     private void Awake()
     {
         // Initialize singleton
@@ -69,13 +71,14 @@ public class TargetAndSeekerManager : MonoBehaviour
             case DemoMode.ParrallelJobOptimized:
                 FindNearest_ParrallelJobOptimized();
                 break;
+
+            // TODO: Use a IJobParralelForTransform to move target and seeker and see if there is a performance improvement
         }
         
     }
 
     private void SpawnTargets()
-    {
-        
+    { 
         for (int i = 0; i < numberOfTarget; i++)
         {
             Vector3 spawnPos = new Vector3(Random.Range(-xAreaLimit, xAreaLimit), 0, Random.Range(-zAreaLimit, zAreaLimit));
@@ -85,8 +88,7 @@ public class TargetAndSeekerManager : MonoBehaviour
     }
 
     private void SpawnSeekers()
-    {
-        
+    { 
         for (int i = 0; i < numberOfSeeker; i++)
         {
             Vector3 spawnPos = new Vector3(Random.Range(-xAreaLimit, xAreaLimit), 0, Random.Range(-zAreaLimit, zAreaLimit));
@@ -191,7 +193,7 @@ public class TargetAndSeekerManager : MonoBehaviour
         NativeArray<float3> seekersPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.TempJob);
         NativeArray<float3> nearestPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.TempJob);
 
-        // Fill Native float3 arrays with positions from the transform arrays
+        // Fill Native float3 arrays with positions from the transform arrays (do this on parralel of sortJob)
         for (int i = 0; i < seekersTransform.Length; i++)
         {
             seekersPosArray[i] = seekersTransform[i].position;

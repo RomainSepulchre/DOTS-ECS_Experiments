@@ -16,6 +16,7 @@ public class Seeker : MonoBehaviour
 
     void Update()
     {
+        // TODO: Use jobs for this
         timer -= Time.deltaTime;
         if (timer <= 0)
         {
@@ -29,9 +30,10 @@ public class Seeker : MonoBehaviour
 
     private void LateUpdate()
     {
-        if(TargetAndSeekerManager.targetsTransform != null && TargetAndSeekerManager.instance != null)
+        // TODO: Seeker late update seems to take time even when not doing anything (~0.3ms)
+        if (TargetAndSeekerManager.targetsTransform != null && TargetAndSeekerManager.instance != null)
         {
-            if(TargetAndSeekerManager.instance.demoMode == TargetAndSeekerManager.DemoMode.MainThread)
+            if (TargetAndSeekerManager.instance.demoMode == TargetAndSeekerManager.DemoMode.MainThread)
             {
                 Transform nearestTarget = FindNearestTarget(TargetAndSeekerManager.targetsTransform);
                 Debug.DrawLine(transform.position, nearestTarget.position, Color.white);
@@ -42,22 +44,19 @@ public class Seeker : MonoBehaviour
     private Transform FindNearestTarget(Transform[] targetTransforms)
     {
         Transform nearestTarget = null;
+        float distWithNearestSq = float.MaxValue;
         foreach (Transform t in targetTransforms)
         {
-            if (nearestTarget == null)
+            // Using squared distance is cheaper than distance when comparing 2 distance since it avoid computing a square root
+            // I went to 5fps to 10 fps on the main thread solution with this change so when comparing distance on a large amount of items it has a real impact
+            // Performance gain for the late update: 0.155-0.170ms -> 0.073-0.080ms
+            float distWithTargetSq = Vector3.SqrMagnitude(t.position - transform.position);
+
+            if (distWithTargetSq < distWithNearestSq)
             {
                 nearestTarget = t;
+                distWithNearestSq = distWithTargetSq;
             }
-            else
-            {
-                float distWithTarget = Vector3.Distance(transform.position, t.position);
-                float distWithNearest = Vector3.Distance(transform.position, nearestTarget.position);
-
-                if (distWithTarget < distWithNearest)
-                {
-                    nearestTarget = t;
-                }
-            }     
         }
 
         return nearestTarget;

@@ -12,18 +12,19 @@ public struct FindNearestParrallelJob : IJobParallelFor
 
     public void Execute(int index)
     {
-        float3 nearestPos = math.INFINITY;
+        float distWithNearestSq = float.MaxValue;
 
         foreach (float3 targetPos in TargetsPos)
         {
-            float distWithTarget = math.distance(SeekersPos[index], targetPos);
-            float distWithNearest = math.distance(SeekersPos[index], nearestPos);
+            // Use squared distance instead of distance because it's cheaper (no need to compute a square root)
+            // Performance gain for this job with 1000 seekers and 1000 targets: 0.33-0.42ms -> 0.28-0.33ms
+            float distWithTargetSq = math.distancesq(SeekersPos[index], targetPos);
 
-            if (distWithTarget < distWithNearest)
+            if (distWithTargetSq < distWithNearestSq)
             {
-                nearestPos = targetPos;
+                NearestPos[index] = targetPos;
+                distWithNearestSq = distWithTargetSq;
             }
         }
-        NearestPos[index] = nearestPos;
     }
 }
