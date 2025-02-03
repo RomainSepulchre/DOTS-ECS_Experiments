@@ -34,7 +34,10 @@ namespace Jobs.TargetAndSeekerDemo
         public static Transform[] targetsTransform;
         public static Transform[] seekersTransform;
 
-        // TODO: Using allocator.Persistent native array disposed at on destroy vs using allocator.TempJob
+        // Using Persistent allocated array instead TempJob allocated array doesn't seems to impact perf but I guess it's better to allocate the memory only once and dispose at on destroy rather than doing it every frame.
+        NativeArray<float3> seekersPosArray;
+        NativeArray<float3> targetsPosArray;
+        NativeArray<float3> nearestPosArray;
 
         private void Awake()
         {
@@ -48,6 +51,11 @@ namespace Jobs.TargetAndSeekerDemo
             // Initialize target and seeker Transform Array
             targetsTransform = new Transform[numberOfTarget];
             seekersTransform = new Transform[numberOfSeeker];
+
+            // Initialize Native array
+            seekersPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.Persistent);
+            targetsPosArray = new NativeArray<float3>(targetsTransform.Length, Allocator.Persistent);
+            nearestPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.Persistent);
 
             // Spawn targets and seekers
             SpawnTargets();
@@ -79,6 +87,13 @@ namespace Jobs.TargetAndSeekerDemo
 
         }
 
+        private void OnDestroy()
+        {
+            seekersPosArray.Dispose();
+            targetsPosArray.Dispose();
+            nearestPosArray.Dispose();
+        }
+
         private void SpawnTargets()
         {
             for (int i = 0; i < numberOfTarget; i++)
@@ -101,10 +116,6 @@ namespace Jobs.TargetAndSeekerDemo
 
         private void FindNearest_SingleThreadJob()
         {
-            NativeArray<float3> seekersPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.TempJob);
-            NativeArray<float3> targetsPosArray = new NativeArray<float3>(targetsTransform.Length, Allocator.TempJob);
-            NativeArray<float3> nearestPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.TempJob);
-
             // Fill Native float3 arrays with positions from the transform arrays
             for (int i = 0; i < seekersTransform.Length; i++)
             {
@@ -131,18 +142,10 @@ namespace Jobs.TargetAndSeekerDemo
             {
                 Debug.DrawLine(seekersPosArray[i], nearestPosArray[i], Color.white);
             }
-
-            seekersPosArray.Dispose();
-            targetsPosArray.Dispose();
-            nearestPosArray.Dispose();
         }
 
         private void FindNearest_ParrallelJob()
         {
-            NativeArray<float3> seekersPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.TempJob);
-            NativeArray<float3> targetsPosArray = new NativeArray<float3>(targetsTransform.Length, Allocator.TempJob);
-            NativeArray<float3> nearestPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.TempJob);
-
             // Fill Native float3 arrays with positions from the transform arrays
             for (int i = 0; i < seekersTransform.Length; i++)
             {
@@ -174,16 +177,10 @@ namespace Jobs.TargetAndSeekerDemo
             {
                 Debug.DrawLine(seekersPosArray[i], nearestPosArray[i], Color.white);
             }
-
-            seekersPosArray.Dispose();
-            targetsPosArray.Dispose();
-            nearestPosArray.Dispose();
         }
 
         private void FindNearest_ParrallelJobOptimized()
         {
-            NativeArray<float3> targetsPosArray = new NativeArray<float3>(targetsTransform.Length, Allocator.TempJob);
-
             for (int i = 0; i < targetsTransform.Length; i++)
             {
                 targetsPosArray[i] = targetsTransform[i].position;
@@ -191,9 +188,6 @@ namespace Jobs.TargetAndSeekerDemo
 
             SortJob<float3, XAxisComparer> sortJob = targetsPosArray.SortJob(new XAxisComparer { });
             JobHandle sortJobHandle = sortJob.Schedule();
-
-            NativeArray<float3> seekersPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.TempJob);
-            NativeArray<float3> nearestPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.TempJob);
 
             // Fill Native float3 arrays with positions from the transform arrays (do this on parralel of sortJob)
             for (int i = 0; i < seekersTransform.Length; i++)
@@ -220,10 +214,6 @@ namespace Jobs.TargetAndSeekerDemo
             {
                 Debug.DrawLine(seekersPosArray[i], nearestPosArray[i], Color.white);
             }
-
-            seekersPosArray.Dispose();
-            targetsPosArray.Dispose();
-            nearestPosArray.Dispose();
         }
     }
 }
