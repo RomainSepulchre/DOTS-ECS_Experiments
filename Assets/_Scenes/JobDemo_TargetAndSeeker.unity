@@ -887,7 +887,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eddd77247a359f44593bb7c44883919f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  demoMode: 3
+  demoMode: 4
   target: {fileID: 4345157624499037595, guid: 7c9298a6a48a8a34bbb93d66c94f2be7, type: 3}
   seeker: {fileID: 550057923002665301, guid: a95e2a3d9da284148adf0a569315cb9c, type: 3}
   numberOfTarget: 1000

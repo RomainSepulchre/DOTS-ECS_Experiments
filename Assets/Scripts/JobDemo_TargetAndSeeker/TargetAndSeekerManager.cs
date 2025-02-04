@@ -4,6 +4,7 @@ using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Jobs;
 using Random = UnityEngine.Random;
 
 namespace Jobs.TargetAndSeekerDemo
@@ -28,7 +29,8 @@ namespace Jobs.TargetAndSeekerDemo
             MainThread,
             SingleThreadJob,
             ParrellelJob,
-            ParrallelJobOptimized
+            ParrallelJobOptimized,
+            ParrallelJobOptimizedAndMovementsWithJobs
         }
 
         public static Transform[] targetsTransform;
@@ -38,6 +40,13 @@ namespace Jobs.TargetAndSeekerDemo
         NativeArray<float3> seekersPosArray;
         NativeArray<float3> targetsPosArray;
         NativeArray<float3> nearestPosArray;
+
+        NativeArray<float3> targetsDirArray;
+        NativeArray<float3> seekersDirArray;
+        NativeArray<float> targetsTimerArray;
+        NativeArray<float> seekersTimerArray;
+        TransformAccessArray targetsTransformAccess;
+        TransformAccessArray seekersTransformAccess;
 
         private void Awake()
         {
@@ -57,9 +66,78 @@ namespace Jobs.TargetAndSeekerDemo
             targetsPosArray = new NativeArray<float3>(targetsTransform.Length, Allocator.Persistent);
             nearestPosArray = new NativeArray<float3>(seekersTransform.Length, Allocator.Persistent);
 
+            seekersDirArray = new NativeArray<float3>(seekersTransform.Length, Allocator.Persistent);
+            targetsDirArray = new NativeArray<float3>(targetsTransform.Length, Allocator.Persistent);
+            seekersTimerArray = new NativeArray<float>(seekersTransform.Length, Allocator.Persistent);
+            targetsTimerArray = new NativeArray<float>(targetsTransform.Length, Allocator.Persistent);
+
             // Spawn targets and seekers
             SpawnTargets();
             SpawnSeekers();
+
+            targetsTransformAccess = new TransformAccessArray(targetsTransform);
+            seekersTransformAccess = new TransformAccessArray(seekersTransform);
+
+            // Fill Timer arrays with 0 to force the reset of the timer at first frame
+            for (int i = 0; i < seekersTimerArray.Length; i++)
+            {
+                seekersTimerArray[i] = 0f;
+            }
+            for (int i = 0; i < targetsTimerArray.Length; i++)
+            {
+                targetsTimerArray[i] = 0f;
+            }
+        }
+
+        private void Update()
+        {
+            if (demoMode == DemoMode.ParrallelJobOptimizedAndMovementsWithJobs)
+            {
+                // Set targets and seekers direction jobs
+                uint seekerRandomSeed = (uint)UnityEngine.Random.Range(1, uint.MaxValue);
+                SetObjectsDirectionJob seekerDirJob = new SetObjectsDirectionJob()
+                {
+                    DeltaTime = Time.deltaTime,
+                    RandomSeed = seekerRandomSeed,
+                    Timers = seekersTimerArray,
+                    Directions = seekersDirArray,
+                };
+
+                uint targetRandomSeed = (uint)UnityEngine.Random.Range(1, uint.MaxValue);
+                SetObjectsDirectionJob targetDirJob = new SetObjectsDirectionJob()
+                {
+                    DeltaTime = Time.deltaTime,
+                    RandomSeed = targetRandomSeed,
+                    Timers = targetsTimerArray,
+                    Directions = targetsDirArray,
+                };
+                int numBatches = Mathf.Max(1, JobsUtility.JobWorkerCount/2); // Use half of worker since two jobs will run in parrallel
+                int batchSize = seekersPosArray.Length / numBatches;
+
+                JobHandle seekerDirHandle = seekerDirJob.Schedule(targetsTimerArray.Length, batchSize);
+                JobHandle targetDirHandle = targetDirJob.Schedule(targetsTimerArray.Length, batchSize);
+
+                // Move targets and seekers jobs
+                MoveObjectsJob moveSeekersJob = new MoveObjectsJob()
+                {
+                    Directions = seekersDirArray,
+                    Speed = 5,
+                    DeltaTime = Time.deltaTime
+                };
+
+                MoveObjectsJob moveTargetsJob = new MoveObjectsJob()
+                {
+                    Directions = targetsDirArray,
+                    Speed = 5,
+                    DeltaTime = Time.deltaTime
+                };
+
+                JobHandle moveSeekersHandle = moveSeekersJob.Schedule(seekersTransformAccess, seekerDirHandle); // depends on seekers direction job
+                JobHandle moveTargetsHandle = moveTargetsJob.Schedule(targetsTransformAccess, targetDirHandle); // depends on targets direction job
+
+                moveSeekersHandle.Complete();
+                moveTargetsHandle.Complete();
+            }
         }
 
         private void LateUpdate()
@@ -79,8 +157,10 @@ namespace Jobs.TargetAndSeekerDemo
                     break;
 
                 case DemoMode.ParrallelJobOptimized:
+                case DemoMode.ParrallelJobOptimizedAndMovementsWithJobs:
                     FindNearest_ParrallelJobOptimized();
                     break;
+                
 
                     // TODO: Use a IJobParralelForTransform to move target and seeker and see if there is a performance improvement
             }
@@ -92,6 +172,13 @@ namespace Jobs.TargetAndSeekerDemo
             seekersPosArray.Dispose();
             targetsPosArray.Dispose();
             nearestPosArray.Dispose();
+
+            targetsDirArray.Dispose();
+            seekersDirArray.Dispose();
+            targetsTimerArray.Dispose();
+            seekersTimerArray.Dispose();
+            if(targetsTransformAccess.isCreated) targetsTransformAccess.Dispose();
+            if (seekersTransformAccess.isCreated) seekersTransformAccess.Dispose();
         }
 
         private void SpawnTargets()
@@ -101,6 +188,11 @@ namespace Jobs.TargetAndSeekerDemo
                 Vector3 spawnPos = new Vector3(Random.Range(-xAreaLimit, xAreaLimit), 0, Random.Range(-zAreaLimit, zAreaLimit));
                 GameObject newTarget = Instantiate(target.gameObject, spawnPos, Quaternion.identity);
                 targetsTransform[i] = newTarget.transform;
+
+                if(demoMode == DemoMode.ParrallelJobOptimizedAndMovementsWithJobs)
+                {
+                    newTarget.GetComponent<Target>().enabled = false;
+                }
             }
         }
 
@@ -111,6 +203,11 @@ namespace Jobs.TargetAndSeekerDemo
                 Vector3 spawnPos = new Vector3(Random.Range(-xAreaLimit, xAreaLimit), 0, Random.Range(-zAreaLimit, zAreaLimit));
                 GameObject newSeeker = Instantiate(seeker.gameObject, spawnPos, Quaternion.identity);
                 seekersTransform[i] = newSeeker.transform;
+
+                if (demoMode == DemoMode.ParrallelJobOptimizedAndMovementsWithJobs)
+                {
+                    newSeeker.GetComponent<Seeker>().enabled = false;
+                }
             }
         }
 
