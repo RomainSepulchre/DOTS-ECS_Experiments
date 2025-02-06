@@ -1,0 +1,316 @@
+# Entities system
+
+## System
+
+A [System](https://docs.unity3d.com/Packages/com.unity.entities@1.2/manual/concepts-systems.html) is the code that provide the logic to modify the data of a component at runtime. There are different types of systems but they all implements these three callback: `OnCreate()`, `OnDestroy()` and `OnUpdate()`. To simplify, these callbacks are an equivalent of a monobehaviour Start(), OnDestroy() and Update() so for example  `OnUpdate()` is usually called every frame (contrary to monobehaviour, [it might not be the case depending on the group the system is part of](#override-onupdate-default-behaviour)).    
+
+Each system belong to a world and generally the entities of a world are only accessed by a system that belong to him. However, it's not a strict limitation: systems, monobehaviour or any code can access the entities of any world.
+
+There is two main type of systems:
+- [`ISystem`][isystem]: an interface that can be implemented for unmanaged systems and iscompatible with Burst.
+- [`SystemBase`][systembase]: a class that can be inherited for managed systems but is not compatible for Burst.
+
+**In general, `ISystem` should be used over `SystemBase`** to get the performance benefits of burst compilation. `SystemBase` has convenient features but at the comprise of using garbage collection allocations or increased sourgen compilation time.
+
+Here is a table that show the compatibility of both types of systems:
+
+| Features                                              | ISystem compatibility | SystemBase compatibility |
+| ----------------------------------------------------- |:---------------------:|:------------------------:|
+| Burst-compiled OnCreate(), OnDestroy() and OnUpdate() | Yes                   | No                       |
+| Unmanaged memory allocations                          | Yes                   | No                       |
+| GC allocated                                          | No                    | Yes                      |
+| Can store managed data directly in system type        | No                    | Yes                      |
+| [Idiomatic foreach][1]                                | Yes                   | Yes                      |
+| [`Entities.Foreach`][2]                               | No                    | Yes                      |
+| [`Job.WithCode`][3]                                   | No                    | Yes                      |
+| [`IJobEntity`][4]                                     | Yes                   | Yes                      |
+| [`IJobChunk`][5]                                      | Yes                   | Yes                      |
+| Support inheritance                                   | No                    | Yes                      |
+
+[isystem]: https://docs.unity3d.com/Packages/com.unity.entities@1.2/manual/systems-isystem.html
+[systembase]: https://docs.unity3d.com/Packages/com.unity.entities@1.2/manual/systems-systembase.html
+
+[1]: https://docs.unity3d.com/Packages/com.unity.entities@1.2/manual/systems-systemapi-query.html
+[2]: https://docs.unity3d.com/Packages/com.unity.entities@1.2/api/Unity.Entities.SystemBase.Entities.html#Unity_Entities_SystemBase_Entities
+[3]: https://docs.unity3d.com/Packages/com.unity.entities@1.2/api/Unity.Entities.SystemBase.Job.html#Unity_Entities_SystemBase_Job
+[4]: https://docs.unity3d.com/Packages/com.unity.entities@1.2/api/Unity.Entities.IJobEntity.html
+[5]: https://docs.unity3d.com/Packages/com.unity.entities@1.2/api/Unity.Entities.IJobChunk.html
+
+### Systems callback
+
+Both types of systems have access to `OnCreate()`, `OnDestroy()` and `OnUpdate()`, here is an detailed explanation of each callback.
+
+#### OnCreate
+
+```C#
+OnCreate(ref SystemState state)
+```
+
+- **Called:** Before the first update  
+- **Purpose:** Set initial state and parameters of the system before its usage
+
+#### OnDestroy
+
+```C#
+OnDestroy(ref SystemState state)
+```
+
+- **Called:** When the system instance is removed from its world or the world itself is disposed  
+- **Purpose:** Do something when the system will be destroyed (ex: reset parameters or dispose something)
+
+#### OnUpdate
+
+```C#
+OnUpdate(ref SystemState state)
+```
+
+- **Called:** Called once per frame in most of the case (it is triggered by the parent system group's OnUpdate, [so group with custom OnUpdate might lead to other behaviour]())
+- **Purpose:** Do the work that the system should repeat every frame
+
+
+
+### ISystem
+
+A system of type [`ISystem`][isystem] is a partial struct implementing the interface `ISystem`.
+
+The callbacks implemented with `ISystem` all takes a [`SystemState`][systemstate] parameter to access the system's world and its entity manager:
+| Parameters              | Description                                                                                                    |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `ref SystemState state` | A reference to the [SystemState][systemstate] that provice access to the system's world and its entity manager |
+
+```c#
+[BurstCompile]
+public partial struct MySystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        // Called before the first update, equivalent of Start() in monobehaviour
+    }
+
+    [BurstCompile]
+    public void OnDestroy(ref SystemState state)
+    {
+        // Called when the system instance is removed from its world or the world  itself is disposed, equivalent of OnDestroy() in monobehaviour
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        // Normally called once per frame, equivalent of Update() in monobehaviour
+    }
+}
+```
+
+> **Currently, IntelliSense doesn't support implementing default interface methods so we need to add `OnCreate(ref SystemState state)`, `OnDestroy(ref SystemState state)` and `OnUpdate(ref SystemState state)` manually.**
+
+> If any of the method is burst-compiled, the struct itself must also have the `[BurstCompile]` attribute. **(Is it still the case ?)**
+
+[systemstate]: #system-state
+
+### SystemBase
+
+A system of type [`SystemBase`][systembase] is a partial class inheriting the class `SystemBase`.
+
+Contrary to `ISystem`, no parameter is passed in the callbacks with `SystemBase`, the systems data are directly inherited from the base class. So for example if we want to get the system dependencies we can just call `Dependency` instead of calling `state.Dependency`. 
+
+```C#
+public partial class TestSystem : SystemBase
+{
+    protected override void OnCreate() { }
+
+    protected override void OnDestroy() { }
+
+    protected override void OnUpdate() { }
+}
+```
+
+## System groups
+
+The systems of a world are organized into a hierarchy of [system groups][systemgroup]. Every system group can have child systems or child system groups, it works like the explorer: a folder can have files and other folders which can also contains files and folders.
+
+### Update of a system group
+
+A system group has a `OnUpdate()` callback that call the update of all its childrens in a sorted order. By default, the children are sorted in a *pseudorandom order*[^1] and every time a child is added or removed to the group the list of children is resorted. If necessary, it is possible to [change the sorting order of systems using attributes](#system-sorting-order).
+
+In the editor, the Systems window (*Window > Entities > Systems*) allow to see the hieriarchy of system groups and systems are sorted in their update order. **The systems and groups we created are only added in the hierarchy at runtime**.
+
+[systemgroup]: https://docs.unity3d.com/Packages/com.unity.entities@1.2/manual/systems-update-order.html
+[^1]: Pseudorandom order: a sequence of number that appears to be statistically random despite having been produced by a deterministic and repeatable process.
+
+### Declare a system group
+
+A [system group] is a class that inherits from [`ComponentSystemGroup`](https://docs.unity3d.com/Packages/com.unity.entities@1.2/api/Unity.Entities.ComponentSystemGroup.html). 
+
+Like systems, the system groups have `OnUpdate()` callback. **By default, it is not implemented in the class** but it can be overrided to customize their behaviour.
+
+```c#
+public partial class MySystemGroup : ComponentSystemGroup
+{
+    protected override void OnUpdate()
+    {
+        base.OnUpdate();
+    }
+}
+```
+
+> Actually, system groups also have a `OnCreate()` and `OnDestroy()` callback but it seems they are generally not used.
+
+### Standard system groups
+
+If we check in the Systems window (*Window > Entities > Systems*) we can see that there is 3 standard system groups that are updated from the Unity main loop itself.
+
+- **Initialization System Group**: used for setup word
+- **Simulation System Group**: used for core game logic
+- **Presentation System Group**: used for rendering
+
+Those standard system groups have default children systems and system groups, for example the `Fixed Step Simulation System Group` is a children of the `Simulation System Group`.
+
+#### Runtime creation of systems
+
+When entering the play mode in editor an automatic bootstrapping process create a default world and populate it with the standard set of system and system groups.
+
+The system and system groups we created in our project will also be created and added to this default world. By default, they are all added to the *Simulation System Group* but [this can be overriden with the `[UpdateInGroup()]` attribute](#change-the-group-of-a-system).
+
+When a system is created, its `OnCreate()` callback is triggered. By default, the order of creation of the systems does not respect system groups but [we can use `[CreateAfter()]` and  `[CreateBefore()]` attributes to make sure some systems are created before or after others systems](#system-creation-order).
+
+> It's possible to disable this automatic bootstrapping entirely by adding **#UNITY_DISABLE_AUTOMATIC_SYSTEMS_BOOTSTRAP** to our scripting define. But using this mean we are now responsible for creating any world, creating and adding systems or system groups instances.
+
+#### Runtime destructions of systems
+
+When we call `World.Dispose()`, the systems are destroyed in the reversed order of their creation. Unity follow this order even if it broke a `CreateBefore` or `CreateAfter` constraint (ex: system manually created out of order).
+
+### Change a system creation and sorting order
+
+#### System creation order
+
+Changing the system creation order is mostly needed when we want to be sure a system has been created before another one. The main use case are:
+- When we must refer to another system inside `OnCreate()` with `World.GetExistingSystem()`. We need to ensure our system will be created after the one it's refering to.
+- When we want to access a singleton component or another resource that is created in another system's `OnCreate()` method.
+
+We can control the order of creation of a system by applying `[CreateBefore()]` or `[CreateAfter()]` attributes on a system. 
+In the example below `MySystem` will always be ordered after `OtherSystemTypeA` but before `OtherSystemTypeB`.
+
+```c#
+[CreateAfter(typeof(OtherSystemTypeA))] // Create this system after system OtherSystemTypeA
+[CreateBefore(typeof(OtherSystemTypeB))] // Create this system before system OtherSystemTypeB
+[BurstCompile]
+public partial struct MySystem : ISystem
+{
+    // ... OnCreate(), OnDestroy() and OnUpdate()
+}
+```
+
+#### System sorting order
+
+We can control the sorting of a system group by applying `[UpdateBefore()]` or `[UpdateAfter()]` attributes on one of its systems. The attributes `[OrderFirst]` and `[OrderLast]` can also be used and take precedence over `[UpdateBefore()]` and `[UpdateAfter()]`.  
+These attributes only apply relative to a children that is part of the same system group.
+
+In the example below `MySystem` will always be ordered after `OtherSystemTypeA` but before `OtherSystemTypeB`.
+
+```c#
+[UpdateAfter(typeof(OtherSystemTypeA))] // Sort this system after system OtherSystemTypeA
+[UpdateBefore(typeof(OtherSystemTypeB))] // Sort this system before system OtherSystemTypeB
+[BurstCompile]
+public partial struct MySystem : ISystem
+{
+    // ... OnCreate(), OnDestroy() and OnUpdate()
+}
+```
+
+> At runtime, we can open the editor Systems window (*Window > Entities > Systems*) to check if the order of our systems has changed.
+
+### Override OnUpdate() default behaviour
+
+If we want to update a system group childrens selectively or update them more than once in a single frame we can override the default `OnUpdate()` and change it's behaviour.
+
+For example [*Fixed Step Simulation System Group*](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.FixedStepSimulationSystemGroup.html) reproduce the behaviour of a *FixedUpdate()*, it attempts to update its childrens at a fixed rate per second so in some frames it can update its childrens multiple times but in other frames it doesn't update them at all.
+
+### Change the group of a system
+
+Sometimes we may want a system to be part of a specific system group, to do that we can use the `[UpdateInGroup()]` attribute.
+In the example below we put *MySystem* in the *Fixed Step Simulation System Group* instead of the default *Simulation System Group*.
+
+```C#
+[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
+public partial struct MySystem : ISystem
+{
+    // ... OnCreate(), OnDestroy() and OnUpdate()
+}
+```
+
+## System State
+
+The `SystemState` is used to allow a system of type `ISystem` to access a system's world and entity manager since, contrary to `SystemBase` they are not inherited from a base class.
+
+A `SystemState` allow to access a system's world and entity manager inside it's `OnCreate()`, `OnDestroy()` and `OnUpdate()` callbacks but it also got his own method to get entity queries and getting component type handle:
+- `GetEntityQuery()`: Get a query for entity
+- `GetComponentTypeHandle<T>()`: Get a Component type handle (which are used to acces a component array of chunks)
+
+**Within a system we should always use these methods instead of their equivalent from EntityManager** because the system state method register component type with the system.
+
+For example, if we get a query for entities with ComponentA and ComponentB by calling SystemState.GetEntityQuery(), ComponentA and ComponentB will be registered with the system which would not have been the case if we called EntityManager.GetEntityQuery().
+
+### Why is it important to keep components accessed in a system registered ?
+
+The best way to understand why it's important is by looking at one of the most feature of system state: the **`Dependency`** property.
+
+Immediately before a system update starts, 2 things happens:
+
+1. `.Complete()` method is invoked on the `JobHandle` stored in the `Dependency` property of `SystemState`
+2. `Dependency` property is then assigned a combined handle with the `Dependency` properties of all other systems which accessed the same component type.
+
+> **Example:**  
+> If a component of type *ComponentA* is registered with my system then the `Dependency` property of all other systems which also have accessed *ComponentA* are combined into one `JobHandle` that is assigned to my system `Dependency` property immediately before each time it update.
+
+**The purpose of this behaviour is to help us pass the needed job dependencies amongst our systems to ensure that all jobs scheduled in a system properly depend upon conflicting jobs scheduled in other systems.**
+
+## Rules for system job dependencies
+
+To be sure all jobs scheduled in a system properly depends on conflicting jobs started in other systems **we need to follow 2 rules**:
+
+1. All jobs scheduled in a system update should directly or indirectly depend on the system's `Dependency` property (*indirectly meaning being a dependency of something that depends on the system's dependencies*).
+2. Before a system `OnUpdate()` returns, `Dependency` should be assigned a `JobHandle` that include all jobs scheduled in `OnUpdate()`.
+
+**As long as these 2 rules are followed, any job we schedule will correctly depend upon jobs scheduled in other systems** and the job scheduled in our system will be completed at the latest before the next system update.
+
+Here is an example with 2 jobs scheduled inside a system's `OnUpdate()`:
+
+```C#
+[BurstCompile]
+public partial struct MySystem : ISystem
+{
+    // ... OnCreate(), OnDestroy()
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        // The dependency of any job scheduled in the update must be state.Dependency (Rule 1.)
+        JobHandle handleJobA = new JobA().Schedule(state.Dependency);
+        JobHandle handleJobB = new JobB().Schedule(state.Dependency);
+
+        // Before leaving OnUpdate() we combine the handle of every jobs scheduled in it and assign the combined handles to state.Dependency (Rule 2.)
+        state.Dependency = JobHandle.CombineDependencies(handleJobA, handleJobB);
+    }
+}
+```
+
+If a job depends on another scheduled in the same OnUpdate(), we can set state.Dependency to the last handle of the chain of dependency since it will automatically include the first handle indirectly.
+
+```C#
+// ... in a system
+
+[BurstCompile]
+public void OnUpdate(ref SystemState state)
+{
+    // The dependency of any job scheduled in the update must be state.Dependency (Rule 1.)
+    JobHandle handleFirstJob = new FirstJob().Schedule(state.Dependency);
+    JobHandle handleSecondJob = new SecondJob().Schedule(handleFirstJob); // we still depends on state.Dependency since it's a dependency of handleFirstJob.
+
+    // Before leaving OnUpdate() we only need to assign the last handle of our chain of dependency to state.Dependency since it include the other handles indirectly. (Rule 2.)
+    state.Dependency = handleSecondJob;
+}
+
+```
+
+
