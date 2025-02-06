@@ -313,7 +313,7 @@ Console.WriteLine(Convert.ToString(a, toBase: 2).PadLeft(32, '0'));
 & operator compare every bit positions in its two operands and set the bit position to 1 in the output only if both operands are set to 1 for this position otherwise the bit position is set to 0.
 
 | Input bit A | Input bit B | Output bit |
-| ----------- | ----------- | ---------- |
+|:-----------:|:-----------:|:----------:|
 |      1      |      1      |      1     |
 |      1      |      0      |      0     |
 |      0      |      1      |      0     |
@@ -333,7 +333,7 @@ Console.WriteLine(Convert.ToString(c, toBase: 2));
 | operator compare every bit positions in its two operands and set the bit position to 1 in the output if at least one of the operands is set to 1 for this position otherwise it is set to 0.
 
 | Input bit A | Input bit B | Output bit |
-| ----------- | ----------- | ---------- |
+|:-----------:|:-----------:|:----------:|
 |      1      |      1      |      1     |
 |      1      |      0      |      1     |
 |      0      |      1      |      1     |
@@ -350,7 +350,7 @@ int c = a | b;         // 1111111110
 ^ operator compare every bit positions in its two operands and set the bit position to 1 in the output if the operands are set to a different value for this position otherwise it is set to 0.
 
 | Input bit A | Input bit B | Output bit |
-| ----------- | ----------- | ---------- |
+|:-----------:|:-----------:|:----------:|
 |      1      |      1      |      0     |
 |      1      |      0      |      1     |
 |      0      |      1      |      1     |

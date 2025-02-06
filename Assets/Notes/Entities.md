@@ -1,18 +1,20 @@
 # Unity Entities
 
-## Entity
+## [Entity](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/concepts-entities.html)
 
 - Has an int id number.
 - Has components (but can only have one component of each type).
 - No built in concept of parenting.
 - Stored in array which make it efficient to access in bulk with what is called a QUERY.
 
-## Component
+## [Component](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/concepts-components.html)
 
 - Must be a struct.
 - Interface IComponentData has no method but mark struct as a component type.
 - Component can contain only unmanaged data type and can reference to other entities in the form of an entity id.
 - Component are meant to be purely data so they usually don't have any methods even if there no issue adding one.
+
+There are differents types of component with different purpose, we can find all the types of component and how to use them [here](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/components-type.html).
 
 >! It's actually possible to define managed component type that may contains other managed object by applying IComponentData to a class but they will have the same efficiency problems of gameObjects so it should be used unless strictly necessary.
 
