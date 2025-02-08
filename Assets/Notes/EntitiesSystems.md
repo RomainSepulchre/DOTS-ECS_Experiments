@@ -40,10 +40,14 @@ Here is a table that show the compatibility of both types of systems:
 
 Both types of systems have access to `OnCreate()`, `OnDestroy()` and `OnUpdate()`, here is an detailed explanation of each callback.
 
+> **! These methods have default do-nothing implementations, so they can be ommitted in the systems when we dont use them.**
+
 #### OnCreate
 
+Equivalent of Monobehaviour `Start()`.
+
 ```C#
-OnCreate(ref SystemState state)
+OnCreate(ref SystemState state) // OnCreate() with SystemBase
 ```
 
 - **Called:** Before the first update  
@@ -51,8 +55,10 @@ OnCreate(ref SystemState state)
 
 #### OnDestroy
 
+Equivalent of Monobehaviour `OnDestroy()`.
+
 ```C#
-OnDestroy(ref SystemState state)
+OnDestroy(ref SystemState state) // OnDestroy() with SystemBase
 ```
 
 - **Called:** When the system instance is removed from its world or the world itself is disposed  
@@ -60,14 +66,42 @@ OnDestroy(ref SystemState state)
 
 #### OnUpdate
 
+Equivalent of Monobehaviour `Update()`.
+
 ```C#
-OnUpdate(ref SystemState state)
+OnUpdate(ref SystemState state) // OnUpdate() with SystemBase
 ```
 
 - **Called:** Called once per frame in most of the case (it is triggered by the parent system group's OnUpdate, [so group with custom OnUpdate might lead to other behaviour]())
 - **Purpose:** Do the work that the system should repeat every frame
 
+> If a system `Enabled` property is set to `false` update will be skipped
 
+#### OnStartRunning and OnStopRunning
+
+These methods can be overrided by default in a `SystemBase` system but in a `ISystem` we need to implement the additionnal interface `ISystemStartStop` to add these 2 additional methods.
+
+##### OnStartRunning
+
+Equivalent of Monobehaviour `OnEnabled()`.
+
+```C#
+OnStartRunning(ref SystemState state) // OnStartRunning() with SystemBase
+```
+
+- **Called:** Before the first `OnUpdate()` call and everytime the system is re-enabled (`Enabled` property changed from `false` to `true`)  
+- **Purpose:** Do something when the system is re-enabled.
+
+##### OnStopRunning
+
+Equivalent of Monobehaviour `OnDisabled()`.
+
+```C#
+OnStopRunning(ref SystemState state) // OnStopRunning() with SystemBase
+```
+
+- **Called:** Before `OnDestroy()` and everytime the system is disabled (`Enabled` property changed from `true` to `false`)  
+- **Purpose:** Do something when the system is disabled.
 
 ### ISystem
 
@@ -115,7 +149,7 @@ A system of type [`SystemBase`][systembase] is a partial class inheriting the cl
 Contrary to `ISystem`, no parameter is passed in the callbacks with `SystemBase`, the systems data are directly inherited from the base class. So for example if we want to get the system dependencies we can just call `Dependency` instead of calling `state.Dependency`. 
 
 ```C#
-public partial class TestSystem : SystemBase
+public partial class MySystem : SystemBase
 {
     protected override void OnCreate() { }
 
@@ -125,20 +159,26 @@ public partial class TestSystem : SystemBase
 }
 ```
 
-## System groups
+## Organization of the systems
 
 The systems of a world are organized into a hierarchy of [system groups][systemgroup]. Every system group can have child systems or child system groups, it works like the explorer: a folder can have files and other folders which can also contains files and folders.
 
-### Update of a system group
+### System groups
+
+A System group is a parent group that can contains system and system group childrens. The `OnUpdate()` method of the group trigger the `OnUpdate()` method of all its children.
+
+#### Update of a system group
 
 A system group has a `OnUpdate()` callback that call the update of all its childrens in a sorted order. By default, the children are sorted in a *pseudorandom order*[^1] and every time a child is added or removed to the group the list of children is resorted. If necessary, it is possible to [change the sorting order of systems using attributes](#system-sorting-order).
+
+The default behaviour of a group [`OnUpdate()` can be overrided to create a custom update behaviour](#override-onupdate-default-behaviour).
 
 In the editor, the Systems window (*Window > Entities > Systems*) allow to see the hieriarchy of system groups and systems are sorted in their update order. **The systems and groups we created are only added in the hierarchy at runtime**.
 
 [systemgroup]: https://docs.unity3d.com/Packages/com.unity.entities@1.2/manual/systems-update-order.html
 [^1]: Pseudorandom order: a sequence of number that appears to be statistically random despite having been produced by a deterministic and repeatable process.
 
-### Declare a system group
+#### Declare a system group
 
 A [system group] is a class that inherits from [`ComponentSystemGroup`](https://docs.unity3d.com/Packages/com.unity.entities@1.2/api/Unity.Entities.ComponentSystemGroup.html). 
 
@@ -156,7 +196,7 @@ public partial class MySystemGroup : ComponentSystemGroup
 
 > Actually, system groups also have a `OnCreate()` and `OnDestroy()` callback but it seems they are generally not used.
 
-### Standard system groups
+#### Standard system groups
 
 If we check in the Systems window (*Window > Entities > Systems*) we can see that there is 3 standard system groups that are updated from the Unity main loop itself.
 
@@ -166,7 +206,13 @@ If we check in the Systems window (*Window > Entities > Systems*) we can see tha
 
 Those standard system groups have default children systems and system groups, for example the `Fixed Step Simulation System Group` is a children of the `Simulation System Group`.
 
-#### Runtime creation of systems
+#### Override OnUpdate() default behaviour
+
+If we want to update a system group childrens selectively or update them more than once in a single frame we can override the default `OnUpdate()` and change it's behaviour.
+
+For example [*Fixed Step Simulation System Group*](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.FixedStepSimulationSystemGroup.html) reproduce the behaviour of a *FixedUpdate()*, it attempts to update its childrens at a fixed rate per second so in some frames it can update its childrens multiple times but in other frames it doesn't update them at all.
+
+### Runtime creation of systems
 
 When entering the play mode in editor an automatic bootstrapping process create a default world and populate it with the standard set of system and system groups.
 
@@ -174,9 +220,13 @@ The system and system groups we created in our project will also be created and 
 
 When a system is created, its `OnCreate()` callback is triggered. By default, the order of creation of the systems does not respect system groups but [we can use `[CreateAfter()]` and  `[CreateBefore()]` attributes to make sure some systems are created before or after others systems](#system-creation-order).
 
-> It's possible to disable this automatic bootstrapping entirely by adding **#UNITY_DISABLE_AUTOMATIC_SYSTEMS_BOOTSTRAP** to our scripting define. But using this mean we are now responsible for creating any world, creating and adding systems or system groups instances.
+> It's possible to disable this automatic bootstrapping entirely by adding **#UNITY_DISABLE_AUTOMATIC_SYSTEMS_BOOTSTRAP** to our scripting define. But using this mean we are now responsible for creating any world, creating and adding systems or system groups instances, Registering top-level system group (such as `SimulationSystemGroup`) to update in the unity player loop.
+>  
+>*#UNITY_DISABLE_AUTOMATIC_SYSTEM_BOOTSTRAP_RUNTIME_WORLD* does the same thing but only for the default world and *#UNITY_DISABLE_AUTOMATIC_SYSTEM_BOOTSTRAP_EDITOR_WORLD* fot the editor world.  
+>
+> Alternatively, we can customize the bootstrapping logic by creating a class that implements [`ICustomBootstrap`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.ICustomBootstrap.html).
 
-#### Runtime destructions of systems
+### Runtime destructions of systems
 
 When we call `World.Dispose()`, the systems are destroyed in the reversed order of their creation. Unity follow this order even if it broke a `CreateBefore` or `CreateAfter` constraint (ex: system manually created out of order).
 
@@ -220,12 +270,6 @@ public partial struct MySystem : ISystem
 
 > At runtime, we can open the editor Systems window (*Window > Entities > Systems*) to check if the order of our systems has changed.
 
-### Override OnUpdate() default behaviour
-
-If we want to update a system group childrens selectively or update them more than once in a single frame we can override the default `OnUpdate()` and change it's behaviour.
-
-For example [*Fixed Step Simulation System Group*](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.FixedStepSimulationSystemGroup.html) reproduce the behaviour of a *FixedUpdate()*, it attempts to update its childrens at a fixed rate per second so in some frames it can update its childrens multiple times but in other frames it doesn't update them at all.
-
 ### Change the group of a system
 
 Sometimes we may want a system to be part of a specific system group, to do that we can use the `[UpdateInGroup()]` attribute.
@@ -243,9 +287,14 @@ public partial struct MySystem : ISystem
 
 The `SystemState` is used to allow a system of type `ISystem` to access a system's world and entity manager since, contrary to `SystemBase` they are not inherited from a base class.
 
-A `SystemState` allow to access a system's world and entity manager inside it's `OnCreate()`, `OnDestroy()` and `OnUpdate()` callbacks but it also got his own method to get entity queries and getting component type handle:
-- `GetEntityQuery()`: Get a query for entity
-- `GetComponentTypeHandle<T>()`: Get a Component type handle (which are used to acces a component array of chunks)
+A `SystemState` allow to access a system's world and entity manager inside it's `OnCreate()`, `OnDestroy()` and `OnUpdate()` callbacks.  
+The main methods and properties of `SystemState` are:
+- **`World`:** this system's world.
+- **`EntityManager`:** the entity manager of this system's world.
+- **`Dependency`:** a `JobHandle` to pass job dependencies between systems.
+- **`GetEntityQuery()`**: Get a query for entity
+- **`GetComponentTypeHandle()`**: Get a Component type handle (which are used to acces a component array of chunks)
+- **`GetComponentLookup<T>()`**
 
 **Within a system we should always use these methods instead of their equivalent from EntityManager** because the system state method register component type with the system.
 
@@ -313,4 +362,34 @@ public void OnUpdate(ref SystemState state)
 
 ```
 
+## Time in worlds and systems
+
+A world has a `Time` property that returns a `TimeData` struct which contains the **frame delta time** and the **elasped time**. The values are updated in the system `UpdateWorldTimeSystem`.
+
+It's possible to manipulate the `Time` values with these `World` methods:
+- **`SetTime()`:**: set the time value.
+- **`PushTime()`**: temporarily change the time value.
+- **`PopTime()`**: restore the time value before the last `PushTime()`.
+
+> Some system groups such as `FixedStepSimulationSystemGroup`, push a value before updating its children and pop the value once done. These groups present false time value to children.
+
+## SystemAPI
+
+[`SystemAPI`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/systems-systemapi.html) is a class that contains many static methods covering the same functionnaly as `World`, `EntityManager` and `SystemState`. It works in systems and `IJobEntity` (it doesn't work in `IJobChunk`) since it relies upon source generators.
+
+**The main advantage of using `SystemAPI` is that the results of the methods will be same in both context** (systems and `IJobEntity`) which means `SystemAPI` will be easier to copy-paste between the two contexts.
+
+The actions we can perform with `SystemAPI` are:
+- **Iterate through data:** Retrieve data per entity that matches a query.
+- **Query building:** Get a cached `EntityQuery`, which you can use to schedule jobs, or retrieve information about that query.
+- **Access data:** Get component data, buffers, and `EntityStorageInfo`.
+- **Access singletons:** Find single instances of data, also known as `singletons`.
+
+
+> `SystemAPI` also provide a `Query()` method that create a foreach loop over the entities and components that match a query.
+
+**When looking for a key Entities functionnality, the general rule is:**
+1. **Check in `SystemAPI` first.**
+2. If the functionnality is not part of `SystemAPI`, **then check in `SystemState`.**
+3. If we still didn't found the functionnality, **check in `EntityManager` and `World`**.
 
