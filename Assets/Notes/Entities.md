@@ -1,3 +1,5 @@
+[Back to summary...](../../)
+
 # Unity Entities
 
 ## [Entity](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/concepts-entities.html)
@@ -181,7 +183,6 @@ To do that we can use 2 special jobs types:
 - IJobChunk: iterate over the chunk matching a query (https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/iterating-data-ijobchunk.html)
 
 >In general IJobEntity is the most convenient way. IJobChunk will provide explicit low level control so it may be needed to fallback to it for some special cases not covered by IJobEntity.
-
 
 ## Baking
 
