@@ -9,7 +9,7 @@ A [System](https://docs.unity3d.com/Packages/com.unity.entities@1.2/manual/conce
 Each system belong to a world and generally the entities of a world are only accessed by a system that belong to him. However, it's not a strict limitation: systems, monobehaviour or any code can access the entities of any world.
 
 There is two main type of systems:
-- [`ISystem`][isystem]: an interface that can be implemented for unmanaged systems and iscompatible with Burst.
+- [`ISystem`][isystem]: an interface that can be implemented for unmanaged systems and is compatible with Burst.
 - [`SystemBase`][systembase]: a class that can be inherited for managed systems but is not compatible for Burst.
 
 **In general, `ISystem` should be used over `SystemBase`** to get the performance benefits of burst compilation. `SystemBase` has convenient features but at the comprise of using garbage collection allocations or increased sourgen compilation time.
