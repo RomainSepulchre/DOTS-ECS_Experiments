@@ -184,6 +184,8 @@ To do that we can use 2 special jobs types:
 
 >In general IJobEntity is the most convenient way. IJobChunk will provide explicit low level control so it may be needed to fallback to it for some special cases not covered by IJobEntity.
 
+[See here for detailed informations.](JobsWithECS.md)
+
 ## Baking
 
 Entities cannot be directly included in unity scene so a build time process called baking convert the gameobjects into serialized entities.  
