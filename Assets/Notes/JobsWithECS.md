@@ -142,4 +142,33 @@ To prevent that:
 
 ## ComponentLookUp<T>
 
+### What is it ?
+
+A [`ComponentLookUp<T>`][componentlookup] is a native container that provide an array-like access to all instances of components of a specific *T* type. It can be used to look up the data associated with one entity while iterating over a different set of entities.
+
+>If we want to get a dynamic buffer instead of a component we can use a [`BufferLookup<T>`][bufferlookup], it works exactly like `ComponentLookUp<T>` but with dynamic buffers.
+
+[componentlookup]: https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.ComponentLookup-1.html
+[bufferlookup]: https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.BufferLookup-1.html
+
+### When should I use it ?
+
+`EntityManager` can be used to access the components of individual entities but generally **it can't be used inside a job, that's why we use `ComponentLookUp<T>`** instead. **Outside of a job it's better to use the `EntityManager`** to avoid the overhead of creating the `ComponentLookUp<T>` object.
+
+>In general looking up an entity by ID comes with the performance cost of chache misses, so it's always to avoid lookups when we can.
+
+### How to use it ?
+
+A `ComponentLookUp<T>` can be passed to a job by defining a public field for it in the job like we would have done with a Native Array.
+
+Like any other naative container in a job, `ComponentLookUp<T>` or `BufferLookup<T>` should be marked as `[ReadOnly]` when we only need to read the components (or dynamic buffers).
+
+It's possible to safely access read-only `ComponentLookUp<T>` in any job. However, by default, it's not possible to write in a `ComponentLookUp<T>` in parallel jobs (including `IJobEntity`, `Entities.Foreach` and `IJobChunk`). When we are sure two instances of the parallel job cannot write the same index, we can use `[NativeDisableParallelForRestriction]` attribute on the `ComponentLookUp<T>` field to remove the restriction.
+
+To check if an entity has the component of type *T*, `ComponentLookUp<T>` has 2 methods:
+- `HasComponent()`: return true if the specified entity has the component of type *T*.
+- `TryGetComponent()`: return true if the specified entity has the component of type *T* and output the component value when it exists.
+
+`BufferLookup<T>` has the equivalent methods: `HasBuffer()` and `TryGetBuffer()`.
+
 ## Entity Command Buffer
