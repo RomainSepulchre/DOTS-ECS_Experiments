@@ -172,3 +172,40 @@ To check if an entity has the component of type *T*, `ComponentLookUp<T>` has 2 
 `BufferLookup<T>` has the equivalent methods: `HasBuffer()` and `TryGetBuffer()`.
 
 ## Entity Command Buffer
+
+An [`EntityCommandBuffer`][entitycommandbuffer] allows to queue up changes on entities (from either a job or the main thread) and to perform these actions later on the main thread by calling the `EntityCommandBuffer` `Playback()` method.
+
+The `EntityCommandBuffer` solve two problems:
+1. The impossibility to access `EntityManager` from a job.
+    - &rarr; Since we can't perform structural changes inside a job, we can instead record commands in an `EntityCommandBuffer` and call `Playback()` on the main thread once the job has been completed.
+2. Performing a structural change (ex: creating a new entity) create a [sync point](#synchronization-points-sync-points) which force to wait the completion of all jobs.
+    - &rarr; Instead of creating an unnecessary sync point we defer the structural changes to a consilated point later in the frame.
+
+[entitycommandbuffer]: https://docs.unity3d.com/Packages/com.unity.entities@0.7/manual/entity_command_buffer.html
+
+### Entity Command Buffer methods
+
+An `EntityCommandBuffer` has most of the command of the `EntityManager`.
+
+- `CreateEntity()`
+- `DestroyEntity()`
+- `AddComponent<T>()`
+- `RemoveComponent<T>()`
+- `SetComponent<T>()`
+- `AppendToBuffer()`: Records a command that will append an individual value to the end of an existing buffer component.
+- `AddBuffer()`: Returns a `DynamicBuffer` which is stored in the recorded command, we can then write in the returned buffer. During `Playback()` the contents of the returned buffer will be copied to the entity's actual buffer.
+- `SetBuffer()`: Like `AddBuffer()`, but it assumes the entity already has a buffer of the component type. In playback, the entity's already existing buffer content is overwritten by the contents of the returned buffer.
+
+>Some `EntityManager` methods have no equivalent in `EntityCommandBuffer` because using them is not possible or simply because it makes no sense. For example, there is no `GetComponent<T>()` method because it makes no sense to defer data reading.
+
+Once we called `Playback()` on an `EntityCommandBuffer` instance it cannot be used anymore. If we need to record more command we have to create a new `EntityCommandBuffer` instance.
+
+### Entity Command Buffer safety handle
+
+Every `EntityCommandBuffer` has a job safety handle so it's not possible to (an exception is thrown if we try to do it):
+- Invoke an `EntityCommandBuffer`'s method on the main thread while it is currently used by a scheduled job.
+- Schedule a job that access an `EntityCommandBuffer` that is already used by another job, jobs that need to access the same `EntityCommandBuffer` must use dependencies.
+
+> **Sharing a single `EntityCommandBuffer` instance accross multiple jobs is not recommended. It might work fine but in many case it won't**.  
+> For example: using the same `EntityCommandBuffer.ParallelWriter` accross multiple parrallel jobs might lead to unexpected playback order of the commands.
+> **&rarr; It's always best to create one `EntityCommandBuffer` per job and anyway there not much performance difference.**
