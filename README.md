@@ -1,36 +1,36 @@
 # Summary of my notes on DOTS and ECS
 
 - [Jobs](Assets/Notes/Jobs.md)
-    - What is a job and how does it work ?
-    - Create and instantiate a job
-    - Job dependencies
-    - Parallel Jobs
+    - [What is a job and how does it work ?](Assets/Notes/Jobs.md#what-is-the-job-system-)
+    - [Create and instantiate a job](Assets/Notes/Jobs.md#create-and-instantiate-a-job)
+    - [Job dependencies](Assets/Notes/Jobs.md#jobs-dependencies)
+    - [Parallel Jobs](Assets/Notes/Jobs.md#parralel-jobs)
 - [Entities](Assets/Notes/Entities.md)
-    - Entity
-    - Component
-    - Worlds
-    - Entity Manager
-    - Archetype and chunks
-    - Entity metadata
-    - Query
-    - Transform Components and Systems
-    - Access entity and components with jobs
-    - Baking
+    - [Entity](Assets/Notes/Entities.md#entity)
+    - [Component](Assets/Notes/Entities.md#component)
+    - [Worlds](Assets/Notes/Entities.md#world-collection-of-entities)
+    - [Entity Manager](Assets/Notes/Entities.md#entity-manager)
+    - [Archetype and chunks](Assets/Notes/Entities.md#archetype-and-chunks)
+    - [Entity metadata](Assets/Notes/Entities.md#entity-metadata)
+    - [Query](Assets/Notes/Entities.md#query)
+    - [Transform Components and Systems](Assets/Notes/Entities.md#transform-components-and-systems)
+    - [Access entity and components with jobs](Assets/Notes/Entities.md#access-entity-and-components-with-jobs)
+    - [Baking](Assets/Notes/Entities.md#baking)
 - [Entities Systems](Assets/Notes/EntitiesSystems.md)
-    - System(Isystem, SystemBase)
-    - System groups and system organization
-    - System State
-    - Time in world and system
-    - SystemAPI
+    - [System(Isystem, SystemBase)](Assets/Notes/EntitiesSystems.md#system)
+    - [System groups and system organization](Assets/Notes/EntitiesSystems.md#system-groups-and-systems-organization)
+    - [System State](Assets/Notes/EntitiesSystems.md#system-state)
+    - [Time in world and system](Assets/Notes/EntitiesSystems.md#time-in-worlds-and-systems)
+    - [SystemAPI](Assets/Notes/EntitiesSystems.md#systemapi)
 - [Jobs with ECS](Assets/Notes/JobsWithECS.md)
-    - Entities Job interfaces (IJobChunk, IJobEntity)
-    - Synchronization points (sync points)
-    - Component safety handles and system job dependency
-    - ComponentLookUp<T>
-    - Entity command buffer
-    - Job scheduling overhead
+    - [Entities Job interfaces (IJobChunk, IJobEntity)](Assets/Notes/JobsWithECS.md#entities-job-interfaces)
+    - [Synchronization points (sync points)](Assets/Notes/JobsWithECS.md#synchronization-points-sync-points)
+    - [Component safety handles and system job dependency](Assets/Notes/JobsWithECS.md#component-safety-handles-and-system-job-dependency)
+    - [ComponentLookUp<T>](Assets/Notes/JobsWithECS.md#componentlookup)
+    - [Entity command buffer](Assets/Notes/JobsWithECS.md#entity-command-buffer)
+    - [Job scheduling overhead](Assets/Notes/JobsWithECS.md#job-scheduling-overhead)
 - [Other Notes](Assets/Notes/OtherNotes.md)
-    - Array binary search
-    - Comparer, IComparer<T> interfaces
-    - Bitwise and shift operations
+    - [Array binary search](Assets/Notes/OtherNotes.md#array-binary-search)
+    - [Comparer, IComparer<T> interfaces](Assets/Notes/OtherNotes.md#icomparer-icomparer-comparer-and-icomparable)
+    - [Bitwise and shift operations](Assets/Notes/OtherNotes.md#bitwise-and-shift-operations)
     - [Other things to check later](Assets/Notes/OtherNotes.md#other-things-to-check-later)
