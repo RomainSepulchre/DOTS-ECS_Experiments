@@ -2,7 +2,14 @@
 
 # Unity Jobs
 
-## Resources links
+Summary:
+
+- [What is a job and how does it work ?](#what-is-the-job-system-)
+- [Create and instantiate a job](#create-and-instantiate-a-job)
+- [Job dependencies](#jobs-dependencies)
+- [Parallel Jobs](#parralel-jobs)
+
+Resources links:
 
 - [EntityComponentSystemSamples github repository](https://github.com/Unity-Technologies/EntityComponentSystemSamples/tree/master?tab=readme-ov-file)
 - [Document Unity Job System 101](https://docs.google.com/document/d/1gtXwUwsuQTfpBUmdFd5ieZaL7v3UdYTKq9H5P0M57Mg/edit?tab=t.0) 

@@ -1,6 +1,36 @@
 # Summary of my notes on DOTS and ECS
 
 - [Jobs](Assets/Notes/Jobs.md)
+    - What is a job and how does it work ?
+    - Create and instantiate a job
+    - Job dependencies
+    - Parallel Jobs
 - [Entities](Assets/Notes/Entities.md)
+    - Entity
+    - Component
+    - Worlds
+    - Entity Manager
+    - Archetype and chunks
+    - Entity metadata
+    - Query
+    - Transform Components and Systems
+    - Access entity and components with jobs
+    - Baking
 - [Entities Systems](Assets/Notes/EntitiesSystems.md)
+    - System(Isystem, SystemBase)
+    - System groups and system organization
+    - System State
+    - Time in world and system
+    - SystemAPI
+- [Jobs with ECS](Assets/Notes/JobsWithECS.md)
+    - Entities Job interfaces (IJobChunk, IJobEntity)
+    - Synchronization points (sync points)
+    - Component safety handles and system job dependency
+    - ComponentLookUp<T>
+    - Entity command buffer
+    - Job scheduling overhead
 - [Other Notes](Assets/Notes/OtherNotes.md)
+    - Array binary search
+    - Comparer, IComparer<T> interfaces
+    - Bitwise and shift operations
+    - [Other things to check later](Assets/Notes/OtherNotes.md#other-things-to-check-later)

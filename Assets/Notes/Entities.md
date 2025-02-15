@@ -2,6 +2,25 @@
 
 # Unity Entities
 
+Summary:
+
+- [Entity](#entity)
+- [Component](#component)
+- [Worlds](#world-collection-of-entities)
+- [Entity Manager](#entity-manager)
+- [Archetype and chunks](#archetype-and-chunks)
+- [Entity metadata](#entity-metadata)
+- [Query](#query)
+- [Transform Components and Systems](#transform-components-and-systems)
+- [Access entity and components with jobs](#access-entity-and-components-with-jobs)
+- [Baking](#baking)
+
+Resources links:
+- [EntityComponentSystemSamples github repository](https://github.com/Unity-Technologies/EntityComponentSystemSamples/tree/master?tab=readme-ov-file)
+- [Document Unity Entities 101](https://docs.google.com/document/d/1R6E4IDpfLatwHITlCND0i5TuMVG0CMGsentFL-3RQT0/edit?tab=t.0)
+- [Unity entities video](https://www.youtube.com/watch?v=jzCEzNoztzM)
+- [Unity ECS concept documentation](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/concepts-intro.html)
+
 ## [Entity](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/concepts-entities.html)
 
 - Lightweith unmanaged alternative to GameObject
@@ -175,6 +194,45 @@ A request to efficiently find all entities with a specific set of component type
 
 Archetypes matching a query are cached until a new archetypes is added to the world. Since the number of existing archetypes in world should stabilize early in the program lifetime, caching usually helps to make queries much faster.
 
+## Transform Components and Systems
+
+> ***Complete with more note based on the doc, this is not completely clear yet for me and maybe move directly in its own .md file***
+
+[Transform in entities documentation](https://docs.unity3d.com/Packages/com.unity.entities@1.2/manual/transforms-concepts.html)
+
+`LocalTransform` is the main standard component that represent the transform of an entity.
+
+### Create a transform hierarchy
+
+A transform hierarchy similar to the GameObject hierarchy can be introduced by adding 3 additional components:
+- `Parent`: component that store the id of the entity's parent
+- `Child`: dynamic buffer component that store the ids of the entity's children
+- `PreviousParent`: component that stored a copy of the id of the entity's parent
+
+> ***Those components are already provided by Unity, we don't need to create them ourself (? Get more info on this: are they added by default on an entity or do we need to add them ourself ?)***
+
+### Modify the hierachy
+
+If we want to modify the hierarchy, we just have to use the parent component:
+
+- Parent an entity: Add the entity a parent component
+- De-Parent an entity: Remove the parent component from the entity
+- Change the parent: Set the entity Parent Component
+
+The `ParentSystem` will do the rest of the job by ensuring that:
+- Every entity with a `Parent` component also has a `PreviousParent` component that references the parent.
+- Every entity with one or more children has a `Child` buffer component that references its childrens.
+
+We can read from the `Child` and `PreviousParent` components but we should not modify them directly. We should only modify the `Parent` component when modying a hierarchy.
+
+> ***What is the `ParentSystem` ? Is this a default system ? when does it update ? I need to know more on this.***
+
+### LocalToWorldSystem
+
+Every frame a system called `LocalToWorldSystem` computes each entity world space transform from the `LocalTransform` of the entity and its ancestors and then assign it to the entity `LocalToWorld` component.
+
+> Entity.Graphics systems read `LocalToWorld` but it doesn't read any other transform components. It is the only component an entity needs to be rendered.
+
 ## Access entity and components with jobs
 
 To do that we can use 2 special jobs types:
@@ -190,6 +248,6 @@ To do that we can use 2 special jobs types:
 
 Entities cannot be directly included in unity scene so a build time process called baking convert the gameobjects into serialized entities.  
 To add entities in a scene we create a subscene. One entity is created for each gameobject in a subscene and each component of each gameObject is processed by a Baker. The Baker is a class which add and set the component values of the entities.  
-The result of the baking is serialized in a entity scene file which is loaded at runtime when the main scene is loaded.  
+The result of the baking is serialized in a entity scene file which is loaded at runtime when the main scene is loaded. 
 >Baked entities can be further processed by a baking system before being serialized for more advanced use cases.
 

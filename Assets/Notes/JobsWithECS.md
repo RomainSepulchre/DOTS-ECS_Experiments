@@ -2,6 +2,20 @@
 
 # Use jobs with ECS
 
+Summary:
+
+- [Entities Job interfaces (IJobChunk, IJobEntity)](#entities-job-interfaces)
+- [Synchronization points (sync points)](#synchronization-points-sync-points)
+- [Component safety handles and system job dependency](#component-safety-handles-and-system-job-dependency)
+- [ComponentLookUp<T>](#componentlookup)
+- [Entity command buffer](#entity-command-buffer)
+- [Job scheduling overhead](#job-scheduling-overhead)
+
+Resources links:
+- [EntityComponentSystemSamples github repository](https://github.com/Unity-Technologies/EntityComponentSystemSamples/tree/master?tab=readme-ov-file)
+- [Document Unity Entities 101](https://docs.google.com/document/d/1R6E4IDpfLatwHITlCND0i5TuMVG0CMGsentFL-3RQT0/edit?tab=t.0)
+- [Unity ECS Jobs with entities documentation](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/job-system.html)
+
 To optimize further the performance of ECS we can use [jobs](jobs.md) to process entity data on worker threads.
 
 ## Entities Job interfaces
@@ -171,7 +185,7 @@ To check if an entity has the component of type *T*, `ComponentLookUp<T>` has 2 
 
 `BufferLookup<T>` has the equivalent methods: `HasBuffer()` and `TryGetBuffer()`.
 
-## Entity Command Buffer
+## Entity command buffer
 
 An [`EntityCommandBuffer`][entitycommandbuffer] allows to queue up changes on entities (from either a job or the main thread) and to perform these actions later on the main thread by calling the `EntityCommandBuffer` `Playback()` method.
 
@@ -207,5 +221,83 @@ Every `EntityCommandBuffer` has a job safety handle so it's not possible to (an 
 - Schedule a job that access an `EntityCommandBuffer` that is already used by another job, jobs that need to access the same `EntityCommandBuffer` must use dependencies.
 
 > **Sharing a single `EntityCommandBuffer` instance accross multiple jobs is not recommended. It might work fine but in many case it won't**.  
-> For example: using the same `EntityCommandBuffer.ParallelWriter` accross multiple parrallel jobs might lead to unexpected playback order of the commands.
-> **&rarr; It's always best to create one `EntityCommandBuffer` per job and anyway there not much performance difference.**
+> For example: using the same [`EntityCommandBuffer.ParallelWriter`](#entitycommandbufferparallelwriter) accross multiple parrallel jobs might lead to unexpected playback order of the commands.  
+> &rarr; It's always best to **create one `EntityCommandBuffer` per job** and anyway there not much performance difference.
+
+### Temporary entity ID
+
+When we record a command to create a new entity like `CreateEntity()` or `Instantiate()` in a `EntityCommandBuffer` it return a *temporary entity ID* since no entity is created until `Playback()` is called.
+
+The temporary ID is a negative index number, it is used to record changes on an entity that will be created by the `EntityCommandBuffer`. After we recorded the creation of an entity, the subsequent `AddComponent()`, `SetComponent()` and `SetBuffer()` methods recorded in the same `EntityCommandBuffer` can use the temporary ID to make change on the future entity that will be created. Once `Playback()` is called every temporary ID in the command will be remapped to the actual ID of the created entity.
+
+> A temporary ID has only a meaning inside the `EntityCommandBuffer` from which it was returned, so it must only be used in it.
+
+### EntityCommandBuffer.ParallelWriter
+
+If we need to record command inside a parallel job we need to use a [`EntityCommandBuffer.ParallelWriter`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.EntityCommandBuffer.ParallelWriter.html). Most of the methods of the parallel writer are the same as a normal `EntityCommandBuffer` but they all takes an additional *sort key* argument to keep the commands deterministic order.
+
+In a parallel job, the work will be split amongst several threads that runs in parallel so the order in which the commands will be recorded depends on the thread scheduling, making it non-deterministic. This is problematic for 2 reasons: non-deterministic code is harder to debug and some netcode solutions rely on determinism to produce a consistent result accross different machines.
+
+It will never be possible to record the command in a deterministic order in a parallel job, however it's possible to playback them in order which solve the problem. That's why we need to pass the additional *sort key* argument:
+1. Commands are recorded with a *sort key*.
+2. When `Playback()` is called, commands are sorted using their sort key.
+3. Commands are executed in their deterministic order.
+
+Of course, the sort key passed must determiniscally correspond to the command recorded to keep the playback order deterministic.
+
+> **Sort key with `IJobEntity`**:   
+> Generally we want to use `ChunkIndexInQuery`. It's a unique value for every chunk but it's not an issue since all entities of a chunk are processed together on the same thread and the order inside a chunk is stable.
+
+> **Sort key with `IJobChunk`**:
+> the `unfilteredChunkIndex` of the `Execute()` method should be used.
+
+### Multi-Playback
+
+The option `PlaybackPolicy.MultiPlayback` can be used when creating an `EntityCommandBuffer` to allow the `Playback()` method to be called more than once.
+
+Otherwise, calling several time `Playback()` on the same `EntityCommandBuffer` will provoke an exception.
+
+> This is mainly useful to spawn the same set of entities repetetively.
+
+### Entity Command Buffer Systems
+
+> *** I need to understand better how to use this in code *** 
+
+An [`EntityCommandBufferSystem`](https://docs.unity3d.com/Packages/com.unity.entities@0.7/api/Unity.Entities.EntityCommandBufferSystem.html) is a specific type of system that allow to play back the commands recorded in an `EntityCommandBuffer` at a clearly defined point in the frame.
+
+In most of the case, it's not needed an `EntityCommandBufferSystem` ourself. The 3 systems groups generated in a default world (initialization, simulation, presentation) each already provide 2 `EntityCommandBufferSystem` (one that runs before the other systems of the group and one that run after all systems of the group):
+- `BeginInitializationEntityCommandBufferSystem`
+- `EndInitializationEntityCommandBufferSystem`
+- `BeginSimulationEntityCommandBufferSystem`
+- `EndSimulationEntityCommandBufferSystem`
+- `BeginPresentationEntityCommandBufferSystem`
+- There is no `EndPresentationEntityCommandBufferSystem` because it the same as using `BeginInitializationEntityCommandBufferSystem` (the end of a frame and the beginning of the next frame is the same point in time)
+
+> An `EntityCommandBuffer` instance created from a `EntityCommandBufferSystem` will be automatically played back and disposed at the next `EntityCommandBufferSystem` update. It should never be manually played back or disposed.
+
+## Job scheduling overhead
+
+When a job is scheduled, there is always a small CPU overhead because Unity need to allocate thread memory and copy data for the job to be able to access those data. This overhead is almost never noticeable except if our application schedule many jobs for a short amount of time.
+
+To check if the CPU takes more time to schedule a job than the job takes to execute, we can check in the profiler if the system that schedule the job marker is longer than the job's marker then we might have a scheduling overhead issue.
+
+### Reduce scheduling overhead
+
+If there is a scheduling overhead the best way to reduce it is to **increase the amount of useful work a job does**.
+
+For example:
+- Combine jobs that operate on similar sets of data into a single larger job.
+- If a parallel job perform a small amount of work on each thread, consider running it on a single thread.
+
+**Avoid moving back the overhead on the main thread**, it might introduce a sync point if other jobs need to access the same data and accepting the scheduling overhead might be more effective.
+
+Running code on the main thread is only recommended in theses cases:
+- For prototyping without the inconvienence of jobs
+- When we manipulate tiny amount of data, that is not used by another job so we don't generate sync point and running on the main thread is more effective than accepting the scheduling overhead.
+- When we're doing that can't be done outside of the main thread (ex: structural changes, interactions with Gameobject based code, calling main thread only core Unity engine API)
+
+If one of these situations applies, avoid using the job system by using an idiomatic foreach.
+
+### Configure job worker count
+
+The number of worker used by the application can be configured by setting `JobUtility.JobWorkerCount`. The number of worker thread used must enough to perform the work required without introducing CPU bottlenecks and less than introducing thread spending a lot of time idle. Use the profiler to test the change.

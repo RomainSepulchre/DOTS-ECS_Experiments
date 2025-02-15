@@ -2,6 +2,20 @@
 
 # Entities system
 
+Summary:
+
+- [System(Isystem, SystemBase)](#system)
+- [System groups and system organization](#system-groups-and-systems-organization)
+- [System State](#system-state)
+- [Time in world and system](#time-in-worlds-and-systems)
+- [SystemAPI](#systemapi)
+
+Resources links:
+- [EntityComponentSystemSamples github repository](https://github.com/Unity-Technologies/EntityComponentSystemSamples/tree/master?tab=readme-ov-file)
+- [Document Unity Entities 101](https://docs.google.com/document/d/1R6E4IDpfLatwHITlCND0i5TuMVG0CMGsentFL-3RQT0/edit?tab=t.0)
+- [Unity entities systems video](https://www.youtube.com/watch?v=k07I-DpCcvE)
+- [Unity ECS Systems documentation](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/systems-intro.html)
+
 ## System
 
 A [System](https://docs.unity3d.com/Packages/com.unity.entities@1.2/manual/concepts-systems.html) is the code that provide the logic to modify the data of a component at runtime. There are different types of systems but they all implements these three callback: `OnCreate()`, `OnDestroy()` and `OnUpdate()`. To simplify, these callbacks are an equivalent of a monobehaviour Start(), OnDestroy() and Update() so for example  `OnUpdate()` is usually called every frame (contrary to monobehaviour, [it might not be the case depending on the group the system is part of](#override-onupdate-default-behaviour)).    
@@ -161,7 +175,7 @@ public partial class MySystem : SystemBase
 }
 ```
 
-## Organization of the systems
+## System groups and systems organization
 
 The systems of a world are organized into a hierarchy of [system groups][systemgroup]. Every system group can have child systems or child system groups, it works like the explorer: a folder can have files and other folders which can also contains files and folders.
 
@@ -316,7 +330,7 @@ Immediately before a system update starts, 2 things happens:
 
 **The purpose of this behaviour is to help us pass the needed job dependencies amongst our systems to ensure that all jobs scheduled in a system properly depend upon conflicting jobs scheduled in other systems.**
 
-## Rules for system job dependencies
+### Rules for system job dependencies
 
 To be sure all jobs scheduled in a system properly depends on conflicting jobs started in other systems **we need to follow 2 rules**:
 
@@ -394,4 +408,5 @@ The actions we can perform with `SystemAPI` are:
 1. **Check in `SystemAPI` first.**
 2. If the functionnality is not part of `SystemAPI`, **then check in `SystemState`.**
 3. If we still didn't found the functionnality, **check in `EntityManager` and `World`**.
+
 
