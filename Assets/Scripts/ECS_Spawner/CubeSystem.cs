@@ -9,6 +9,9 @@ using UnityEngine.SocialPlatforms;
 
 namespace ECS.ECSExperiments
 {
+    // TODO: Get more info on how the attribute works to undeerstand when it can be used
+    // TODO: Write some notes on the attribute once I understand better how it works
+    [RequireMatchingQueriesForUpdate] // Skip OnUpdate if the EntityQuery is empty (it seems to work without declaring an Entity Query 
     public partial struct CubeSystem : ISystem
     {
         [BurstCompile]
