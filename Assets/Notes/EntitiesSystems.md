@@ -129,7 +129,6 @@ The callbacks implemented with `ISystem` all takes a [`SystemState`][systemstate
 | `ref SystemState state` | A reference to the [SystemState][systemstate] that provice access to the system's world and its entity manager |
 
 ```c#
-[BurstCompile]
 public partial struct MySystem : ISystem
 {
     [BurstCompile]
@@ -154,7 +153,7 @@ public partial struct MySystem : ISystem
 
 > **Currently, IntelliSense doesn't support implementing default interface methods so we need to add `OnCreate(ref SystemState state)`, `OnDestroy(ref SystemState state)` and `OnUpdate(ref SystemState state)` manually.**
 
-> If any of the method is burst-compiled, the struct itself must also have the `[BurstCompile]` attribute. **(Is it still the case ?)**
+> In a system the `[BurstCompile]` attribute is only needed on the method that need to use burst, it's not needed to also add it to the struct .
 
 [systemstate]: #system-state
 

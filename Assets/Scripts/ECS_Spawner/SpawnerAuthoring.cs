@@ -1,29 +1,41 @@
 using UnityEngine;
 using Unity.Entities;
 
-public class SpawnerAuthoring : MonoBehaviour
+namespace ECS.ECSExperiments
 {
-    public GameObject Prefab;
-    public float SpawnRate;
-    public int SpawnCount;
-}
-
-class SpawnerBaker : Baker<SpawnerAuthoring>
-{
-    public override void Bake(SpawnerAuthoring authoring)
+    public class SpawnerAuthoring : MonoBehaviour
     {
-        var entity = GetEntity(TransformUsageFlags.None);
-
-        Spawner newSpawner = new Spawner
-        {
-            Prefab = GetEntity(authoring.Prefab, TransformUsageFlags.Dynamic),
-            SpawnPosition = authoring.transform.position,
-            NextSpawnTime = 0.0f,
-            SpawnRate = authoring.SpawnRate,
-            SpawnCount = authoring.SpawnCount
-        };
-
-        AddComponent(entity, newSpawner);
+        public GameObject Prefab;
+        public float SpawnRate;
+        public int SpawnCount;
+        public bool SpawnAllAtFirstFrame;
+        public bool UseJobs;
     }
+
+    class SpawnerBaker : Baker<SpawnerAuthoring>
+    {
+        public override void Bake(SpawnerAuthoring authoring)
+        {
+            var entity = GetEntity(TransformUsageFlags.None);
+
+            Spawner newSpawner = new Spawner
+            {
+                Prefab = GetEntity(authoring.Prefab, TransformUsageFlags.Dynamic),
+                SpawnPosition = authoring.transform.position,
+                NextSpawnTime = 0.0f,
+                SpawnRate = authoring.SpawnRate,
+                SpawnCount = authoring.SpawnCount,
+                SpawnAllAtFirstFrame = authoring.SpawnAllAtFirstFrame
+            };
+
+            AddComponent(entity, newSpawner);
+
+            if(authoring.UseJobs)
+            {
+                SpawnerUseJobs newJobsTag = new SpawnerUseJobs();
+                AddComponent(entity, newJobsTag);
+            }
+        }
+    } 
 }
 

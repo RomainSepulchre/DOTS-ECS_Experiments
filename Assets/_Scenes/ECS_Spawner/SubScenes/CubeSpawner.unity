@@ -130,7 +130,7 @@ GameObject:
   - component: {fileID: 834341254}
   - component: {fileID: 834341253}
   m_Layer: 0
-  m_Name: Spawner
+  m_Name: SpawnerNoJobs
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -151,6 +151,8 @@ MonoBehaviour:
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 0.1
   SpawnCount: 10000
+  SpawnAllAtFirstFrame: 1
+  UseJobs: 0
 --- !u!4 &834341254
 Transform:
   m_ObjectHideFlags: 0
