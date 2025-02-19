@@ -11,8 +11,9 @@ namespace ECS.ECSExperiments
 {
     // TODO: Get more info on how the attribute works to undeerstand when it can be used
     // TODO: Write some notes on the attribute once I understand better how it works
-    // It seems that if only one of the system queries match, updaate is still processed? Maybe i'm missing something
-    [RequireMatchingQueriesForUpdate] // Skip OnUpdate if the EntityQuery is empty (it seems to work without declaring an Entity Query 
+    // It seems that if only one of the system queries match, update is still processed?
+    // -> it's the case it's only skip update when every queries in the system are empty, I need to take look at state.RequireForUpdate()
+    [RequireMatchingQueriesForUpdate] // Skip OnUpdate if every EntityQuery is empty (it seems to work without declaring a specific Entity Query out of our Update)
     public partial struct CubeSystem : ISystem
     {
         [BurstCompile]
