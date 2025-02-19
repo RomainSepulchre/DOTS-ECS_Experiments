@@ -125,4 +125,3 @@ MonoBehaviour:
   moveSpeed: 1
   moveForward: 1
   timerDuration: 5
-  randomSpeedAndTimer: 1

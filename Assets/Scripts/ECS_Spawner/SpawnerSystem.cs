@@ -16,9 +16,11 @@ namespace ECS.ECSExperiments
     [RequireMatchingQueriesForUpdate]
     public partial struct SpawnerSystem : ISystem
     {
+        EntityQuery cubeQuery; // It probably better to assign our query once and cache it than to recreate it every update
+
         public void OnCreate(ref SystemState state)
         {
-
+            cubeQuery = SystemAPI.QueryBuilder().WithAll<Cube>().Build();
         }
 
         public void OnDestroy(ref SystemState state)
@@ -29,9 +31,10 @@ namespace ECS.ECSExperiments
         public void OnUpdate(ref SystemState state)
         {
             bool allCubesSpawned = false;
-            foreach (RefRW<Spawner> spawner in SystemAPI.Query<RefRW<Spawner>>().WithAbsent<SpawnerUseJobs>())
+            foreach (RefRW<Spawner> spawner in SystemAPI.Query<RefRW<Spawner>>().WithNone<SpawnerUseJobs>())
             {
                 bool spawnAllCubes = spawner.ValueRO.SpawnAllAtFirstFrame;
+                int cubeCount = cubeQuery.CalculateEntityCount();
 
                 if (spawnAllCubes)
                 {
@@ -48,9 +51,6 @@ namespace ECS.ECSExperiments
                 else
                 {
                     // Spawn a cube at every spawn time until the spawn count is reached
-                    EntityQuery cubeQuery = SystemAPI.QueryBuilder().WithAll<Cube>().Build();
-                    int cubeCount = cubeQuery.CalculateEntityCount();
-
                     if (cubeCount >= spawner.ValueRO.SpawnCount)
                     {
                         allCubesSpawned = true;
@@ -102,9 +102,11 @@ namespace ECS.ECSExperiments
         private void SetCubeRandomValues(ref SystemState state, Entity newEntity, Random random)
         {
             Cube cube = state.EntityManager.GetComponentData<Cube>(newEntity);
+            cube.MoveDirection = random.NextFloat3Direction();
             cube.MoveSpeed = random.NextFloat(0.5f, 5f);
             cube.TimerDuration = random.NextFloat(1f, 5f);
-            cube.MoveDirection = random.NextFloat3Direction();
+            cube.Timer = cube.TimerDuration;
+
             state.EntityManager.SetComponentData(newEntity, cube);
         }
     }

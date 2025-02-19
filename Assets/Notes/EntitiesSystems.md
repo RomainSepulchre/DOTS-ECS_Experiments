@@ -391,7 +391,7 @@ It's possible to manipulate the `Time` values with these `World` methods:
 
 ## SystemAPI
 
-[`SystemAPI`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/systems-systemapi.html) is a class that contains many static methods covering the same functionnaly as `World`, `EntityManager` and `SystemState`. It works in systems and `IJobEntity` (it doesn't work in `IJobChunk`) since it relies upon source generators.
+[`SystemAPI`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/systems-systemapi.html) is a class that contains many static methods covering the same functionnaly as `World`, `EntityManager` and `SystemState`. It works in systems and `IJobEntity` (it doesn't work in `IJobChunk`) since it relies upon source generators. It works in both `SystemBase` and `ISystem` systems.
 
 **The main advantage of using `SystemAPI` is that the results of the methods will be same in both context** (systems and `IJobEntity`) which means `SystemAPI` will be easier to copy-paste between the two contexts.
 
@@ -400,7 +400,6 @@ The actions we can perform with `SystemAPI` are:
 - **Query building:** Get a cached `EntityQuery`, which you can use to schedule jobs, or retrieve information about that query.
 - **Access data:** Get component data, buffers, and `EntityStorageInfo`.
 - **Access singletons:** Find single instances of data, also known as `singletons`.
-
 
 > `SystemAPI` also provide a `Query()` method that create a foreach loop over the entities and components that match a query.
 
@@ -449,14 +448,15 @@ public partial struct MySystem : ISystem
 
 It possible to make a more precise query by using additional methods on our query. [Check this to see all the methods](https://docs.unity3d.com/Packages/com.unity.entities@1.0/api/Unity.Entities.QueryEnumerable-1.html), here are some of the most useful:
 
-- `.WithAbsent<Tcomponent>()`: Specify component(s) that must not be present.
 - `.WithAll<Tcomponent>()`: Specify component(s) that must be present.
 - `.WithAny<Tcomponent>()`: Specify optional component(s)
 - `.WithNone<Tcomponent>()`: Specify component(s) that must be absent.
+- `.WithAbsent<Tcomponent>()`: Specify component(s) that must not be present.
 
 All of these methods can specify several components like this: `.WithAny<TComponent1, TComponent2, TComponent3>()`.
 
 > ***Is there a difference between `.WithAbsent<Tcomponent>()` and `.WithNone<Tcomponent>()`, they shound pretty similar***
+> ***I had a weird issue when using `.WithAbsent<Tcomponent>()` where my query returned an error when I tried to check the query in the editor, it seems better to use `.WithNone<Tcomponent>()`***
 
 In this example we iterate through all entities that have a *ComponentA* but no *ComponentB*.
 
@@ -466,8 +466,8 @@ public partial struct MySystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        // WithAbsent<T> is used to exclude entity with component T from the query
-        foreach((RefRW<ComponentA> compA) in SystemAPI.Query<RefRW<ComponentA>>().WithAbsent<ComponentB>())
+        // WithNone<T> is used to exclude entity with component T from the query
+        foreach((RefRW<ComponentA> compA) in SystemAPI.Query<RefRW<ComponentA>>().WithNone<ComponentB>())
         {
             // Do something with compA
         }
@@ -479,7 +479,7 @@ It's also possible to use several methods in a row to get an even more complex q
 In the example below we iterate through all entities that have a *componentA*, no *componentB* and any of *componentC* or *componentD*.
 
 ```c#
-foreach((RefRW<ComponentA> compA) in SystemAPI.Query<RefRW<ComponentA>>().WithAbsent<ComponentB>().WithAny<ComponentC,ComponentD>())
+foreach((RefRW<ComponentA> compA) in SystemAPI.Query<RefRW<ComponentA>>().WithNone<ComponentB>().WithAny<ComponentC,ComponentD>())
 {
     // Do something with compA
 }

@@ -47,16 +47,9 @@ It is not possible to do strutural changes inside a job, they must be done on th
 
 See [this section to more info on EntityCommandBuffer](#entity-command-buffer).
 
-### [IJobChunk][ijobchunk]
-
-TODO: TEST THIS IN REAL CONDITION
-
-```c#
-```
-
 ### [IJobEntity][ijobentity]
 
-TODO: TEST THIS IN REAL CONDITION
+Here is how to use an `IJobEntity` that iterate over every entity that has a *MyComponent* component.
 
 ```c#
 public struct MyComponent : IComponentData // A simple component for the example
@@ -64,10 +57,11 @@ public struct MyComponent : IComponentData // A simple component for the example
     public float Value;
 }
 
+[BurstCompile]
 public partial struct MyEntityJob : IJobEntity // partial keyword is needed because IJobEntity use source generation to implement IJobChunk in a separated file (project/Temp/GeneratedCode/.....)
 {
     // We need to add Execute() manually
-    public void Execute(ref MyComponent component)
+    public void Execute(ref MyComponent component) // ref is used for component that will be read and write, for read only component we should use in
     {
         // Operation do to on the component data
         component.Value += 1f;
@@ -75,7 +69,6 @@ public partial struct MyEntityJob : IJobEntity // partial keyword is needed beca
 }
 
 // The system that runs the job
-[BurstCompile]
 public partial struct MySystem : ISystem
 {
     // ... Other system methods
@@ -89,9 +82,109 @@ public partial struct MySystem : ISystem
 }
 ```
 
-#### Use a query
+We are not limited to only one component in our job, we can pass several components and a query that match all those component will be created.  
+In the example below we declare an `IJobEntity` that will iterate over every entity that has the component *ComponentA* and *ComponentB*.  
+Note that *ComponentA* is declared with the keyword a `ref` and *ComponentB* with the keyword `in` to show the difference read-write and read-only component: `ref` must be used for component where we will need a read-write access and `in` must be used for component where a read-only access is enough.
+
+```C#
+[BurstCompile]
+public partial struct MyEntityJob : IJobEntity
+{
+    public void Execute(ref ComponentA compA, in ComponentB compB) // ref is used for components where read-write is needed, in is used for components where read-only is enough
+    {
+        //... Operation do to on the component data
+    }
+}
+```
+
+#### IJobEntity supported parameters
+
+To get the full list of parameters supported by in an `IJobEntity` `Execute()` [checks this section of unity documentation](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/iterating-data-ijobentity.html#execute-parameters).
+
+Here is a few of short list of the main parameters:
+- `IComponentData`: give access to com,ponent data, marked as `ref` for read-write access and `in` for read-only access.
+- `Entity`: get the current entity. It's a value copy only, so it don't mark with `ref` or `in`.
+- `DynamicBuffer<T>`: get a dynamic buffer, marked as `ref` for read-write access and `in` for read-only access.
+- 3 `int` are supported but must be marked with an attribute:
+    - `[EntityIndexInQuery]`: Set on a `int` parameter in `Execute()`, the int parameter marked by the attribute will return the current index in the query for the current entity iteration. It the equivalent of `entityInQueryIndex` in `Entities.ForEach`. **This parameter internally use `EntityQuery.CalculateBaseEntityIndexArray[Async]` which negatively affects performance**.
+    - `[ChunkIndexInQuery]`: Set on a `int` parameter in `Execute()`, the int parameter marked by the attribute will return the current archetype chunk index in a query.
+    - `[EntityIndexInChunk]`: Set on a `int` parameter in `Execute()`, the int parameter marked by the attribute will return the current entity index in the current archetype chunk. Associated with [ChunkIndexInQuery] it give us a unique identifier per entity.
 
 
+
+#### Specify a query for our job
+
+If we need to do a more complex query we can set an `EntityQuery` and pass as a parameter when scheduling our job.
+
+> To build a query, using `SystemAPI.QueryBuilder()` is better than `state.GetEntityQuery()` since it does not allocate GC and is burst-compatible.
+
+In the example below we create a query to execute our job only on the entity that have *ComponentA* but doesn't have *ComponentB*.
+
+```c#
+[BurstCompile]
+public partial struct MyEntityJob : IJobEntity
+{
+    public void Execute(ref ComponentA compA) // Our job still pass the component it will need to access
+    {
+        //... Operation do to on the component data
+    }
+}
+
+// The system that runs the job
+public partial struct MySystem : ISystem
+{
+    EntityQuery jobQuery; // It's be better to assign the query once in OnCreate and keep it cached rather than recreating a query at every update.
+
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        // Assign EntityQuery, here the query get all the entity that has ComponentA and don't have ComponentB
+        // Obviously, the query must include the component we want to access in the job (ComponentA in this case)
+        jobQuery = SystemAPI.QueryBuilder().WithAll<ComponentA>().WithNone<ComponentB>().Build();
+        // Using SystemAPI.QueryBuilder() is better than state.GetEntityQuery() since it does not allocaate GC and is burst-compatible
+    }
+
+    // ... Other system methods
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        // Schedule the job with the query as parameter
+        new MyEntityJob.Schedule(jobQuery);
+    }
+}
+```
+
+#### IJobEntity attributes
+
+Another way to narrow a query is to use the built-in attributes that comes with `IJobEntity`:
+
+- `[WithAll(params Type[])]`: set on the job struct, the entity must have the component types passed in the attributes to be in the query.
+- `[WithAny(params Type[])]`: set on the job struct, the entity must have any of the component types passed in the attributes to be in the query.
+- `[WithNone(params Type[])]`: set on the job struct, the entity must not have the component types passed in the attributes to be in the query.
+- `[WithChangeFilter(params Type[])]`: set on the job struct or attached to an argument in `Execute()`, narrows the query so that the entities have to have had changes in the archetype chunk for the given components.
+- `[WithOptions(params Type[])]`: set on the job struct, changes the scope of the query to use the `EntityQueryOptions` described.
+
+Here is a quick example of `[WithAny()]` used to specify the entity must have any of *ComponentB* and *ComponentC* components
+```C#
+[BurstCompile]
+[WithAny(typeof(ComponentB), typeof(ComponentC))]
+public partial struct MyEntityJob : IJobEntity
+{
+    // Our job will iterate through every entity with ComponentA that also has ComponentB or ComponentC
+    public void Execute(ref ComponentA compA) 
+    {
+        //... Operation do to on the component data
+    }
+}
+```
+
+### [IJobChunk][ijobchunk]
+
+TODO: TEST THIS IN REAL CONDITION
+
+```c#
+```
 
 ## Synchronization points (Sync points)
 
