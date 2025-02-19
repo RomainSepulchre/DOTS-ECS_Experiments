@@ -11,11 +11,24 @@ namespace ECS.ECSExperiments
 {
     // TODO: Get more info on how the attribute works to undeerstand when it can be used
     // TODO: Write some notes on the attribute once I understand better how it works
-    // It seems that if only one of the system queries match, update is still processed?
-    // -> it's the case it's only skip update when every queries in the system are empty, I need to take look at state.RequireForUpdate()
-    [RequireMatchingQueriesForUpdate] // Skip OnUpdate if every EntityQuery is empty (it seems to work without declaring a specific Entity Query out of our Update)
+    // [RequireMatchingQueriesForUpdate] // Skip OnUpdate if every EntityQuery is empty (it seems to work without declaring a specific Entity Query out of our Update)
+    // -> only skip update when every queries in the system are empty
+    // -> it seems better to use state.RequireForUpdate() or RequireAnyForUpdate() it allows for more precision
+
     public partial struct CubeSystem : ISystem
     {
+        EntityQuery cubeQuery;
+
+        [BurstCompile]
+        public void OnCreate(ref SystemState state)
+        {
+			// Use a WithAllRW() to keep only 1 query in the system (vs 1 read-only here + 1 RW in the update with WithAll() -> has it a real perf impact ?)
+            cubeQuery = SystemAPI.QueryBuilder().WithAllRW<Cube, LocalTransform>().Build();
+
+            // Require there is at least one cube that match the query to run the update
+            state.RequireForUpdate(cubeQuery);
+        }
+
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {

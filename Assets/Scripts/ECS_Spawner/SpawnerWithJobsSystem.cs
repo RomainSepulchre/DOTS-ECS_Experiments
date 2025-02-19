@@ -17,20 +17,23 @@ namespace ECS.ECSExperiments
 
     // TODO: Retry to add a component
 
-
-    [RequireMatchingQueriesForUpdate]
     public partial struct SpawnerWithJobsSystem : ISystem
     {
         EntityQuery spawnerQuery;
         EntityQuery cubeQuery;
 
+        [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             // using SystemAPI.QueryBuilder() is recommended over state.GetEntityQuery() (its doesn't allocate GC and is burst compaatible)
             spawnerQuery = SystemAPI.QueryBuilder().WithAllRW<Spawner>().WithAll<SpawnerUseJobs>().Build();
             cubeQuery = SystemAPI.QueryBuilder().WithAll<Cube>().Build();
+
+            // Require there is at least one spawner that match the query to run the update
+            state.RequireForUpdate(spawnerQuery);
         }
 
+        [BurstCompile]
         public void OnDestroy(ref SystemState state)
         {
         }

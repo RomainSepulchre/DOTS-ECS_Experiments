@@ -13,16 +13,22 @@ namespace ECS.ECSExperiments
     // Run on one thread
     //
         
-    [RequireMatchingQueriesForUpdate]
     public partial struct SpawnerSystem : ISystem
     {
         EntityQuery cubeQuery; // It probably better to assign our query once and cache it than to recreate it every update
+        EntityQuery spawnerQuery;
 
+        [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             cubeQuery = SystemAPI.QueryBuilder().WithAll<Cube>().Build();
+            spawnerQuery = SystemAPI.QueryBuilder().WithAllRW<Spawner>().WithNone<SpawnerUseJobs>().Build();
+
+            // Require there is at least one spawner that match the query to run the update
+            state.RequireForUpdate(spawnerQuery);
         }
 
+        [BurstCompile]
         public void OnDestroy(ref SystemState state)
         {
         }
