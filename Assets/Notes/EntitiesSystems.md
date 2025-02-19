@@ -9,6 +9,7 @@ Summary:
 - [System State](#system-state)
 - [Time in world and system](#time-in-worlds-and-systems)
 - [SystemAPI](#systemapi)
+- [Iterate over components in Systems](#iterate-over-components-in-systems)
 
 Resources links:
 - [EntityComponentSystemSamples github repository](https://github.com/Unity-Technologies/EntityComponentSystemSamples/tree/master?tab=readme-ov-file)
@@ -407,5 +408,157 @@ The actions we can perform with `SystemAPI` are:
 1. **Check in `SystemAPI` first.**
 2. If the functionnality is not part of `SystemAPI`, **then check in `SystemState`.**
 3. If we still didn't found the functionnality, **check in `EntityManager` and `World`**.
+
+## Iterate over components in Systems
+
+### SystemAPI.Query
+
+Use this method to iterate through a collection of components on the main thread.  
+Unity documentation can be found [here](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/systems-systemapi-query.html).
+
+#### Simple query
+
+In this example we use a simple query to iterate through all entity that has both a *LocalTransform* and a *Speed* components. Once we accesed the data, we modify the entity position to move it forward.
+
+```C#
+public partial struct MySystem : ISystem
+{
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        float deltaTime = SystemAPi.Time.DeltaTime;
+
+        // SystemAPI.Query can only be used in a foreach. The type used in the query need to be a RefRW<T> or a RefRO<T>, T being the component we want to access.
+        // RefRW<T> give a read-write access if you need to modify data while RefRO<T> only give a read only access
+        foreach((RefRW<LocalTransform> transform, RefRO<Speed> speed) in SystemAPI.Query<RefRW<LocalTransform>, RefRO<Speed>>())
+        {
+            // When accessing a value from a RefRO<T> we need to access them through ValueRO
+            // From a RefRW<T> we must use ValueRW if we need to write data and ValueRO if we only need to read it.
+            float forwardSpeed = speed.ValueRO.forwardSpeed;
+            float3 nextPosition = transform.ValueRO.Position + (transform.ValueRO.Forward() * forwardSpeed * deltaTime)
+            transform.ValueRW.Position = nextPosition;
+        }
+    }
+}
+```
+
+> To simplify the foreach, instead of declaring the type of every variable we can also write:  
+> `foreach( var (transform, speed) in SystemAPI.Query<RefRW<LocalTransform>, RefRO<Speed>>())`
+
+#### Complex query
+
+It possible to make a more precise query by using additional methods on our query. [Check this to see all the methods](https://docs.unity3d.com/Packages/com.unity.entities@1.0/api/Unity.Entities.QueryEnumerable-1.html), here are some of the most useful:
+
+- `.WithAbsent<Tcomponent>()`: Specify component(s) that must not be present.
+- `.WithAll<Tcomponent>()`: Specify component(s) that must be present.
+- `.WithAny<Tcomponent>()`: Specify optional component(s)
+- `.WithNone<Tcomponent>()`: Specify component(s) that must be absent.
+
+All of these methods can specify several components like this: `.WithAny<TComponent1, TComponent2, TComponent3>()`.
+
+> ***Is there a difference between `.WithAbsent<Tcomponent>()` and `.WithNone<Tcomponent>()`, they shound pretty similar***
+
+In this example we iterate through all entities that have a *ComponentA* but no *ComponentB*.
+
+```C#
+public partial struct MySystem : ISystem
+{
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        // WithAbsent<T> is used to exclude entity with component T from the query
+        foreach((RefRW<ComponentA> compA) in SystemAPI.Query<RefRW<ComponentA>>().WithAbsent<ComponentB>())
+        {
+            // Do something with compA
+        }
+    }
+}
+```
+
+It's also possible to use several methods in a row to get an even more complex query.  
+In the example below we iterate through all entities that have a *componentA*, no *componentB* and any of *componentC* or *componentD*.
+
+```c#
+foreach((RefRW<ComponentA> compA) in SystemAPI.Query<RefRW<ComponentA>>().WithAbsent<ComponentB>().WithAny<ComponentC,ComponentD>())
+{
+    // Do something with compA
+}
+```
+
+#### Accessing entity in the query
+
+By default `SystemAPI.Query` only give us access to the components of the entities that match our query, but it's possible to also access the Entity itself by using `.WithEntityAccess()`.
+
+```c#
+// The entity parameter must always be the latest parameter
+foreach ((RefRW<ComponentA> compA, RefRW<ComponentB> compB, Entity entity) in SystemAPI.Query<RefRW<ComponentA>, RefRO<ComponentB>>().WithEntityAccess())
+{
+    // Do something;
+}
+```
+
+### IJobChunk and IJobEntity
+
+Use this method to use jobs iterate through a collection of components.
+
+`IJobEntity` is generally more convenient to write and use but `IJobChunk` provide more precise control however **the performance of both solutions are identical**.
+
+For more info, checkmy detailed notes on [Using Jobs with ECS](JobsWithECS.md).
+
+Unity documentation links:
+- [using `IJobEntity`](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/iterating-data-ijobentity.html)
+- [using `IJobChunk`](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/iterating-data-ijobchunk-implement.html)
+
+### Entities.Foreach
+
+When using a system that inherits from `SystemBase`, it's possible to use [`Entities.Foreach`](https://docs.unity3d.com/Packages/com.unity.entities@1.0/api/Unity.Entities.SystemBase.Entities.html#Unity_Entities_SystemBase_Entities) to execute code on entities and their components. We pass `Entities.Foreach` a lambda expression and when compiled, it is translated into a generated job that calls the expression once for each entity match our query.
+
+**This should only be used in a `SystemBase`. In `ISystem`, `Entities.Foreach` is 4 times slower to compile than `SystemAPI.Query` and `IJobEntity`**
+
+A typical `Entities.Foreach` will look like this:
+
+```C#
+// When using the standard delegates, the parameters must follow this order: passed-by-value -> ref -> in
+Entities.ForEach(
+    (Entity entity,
+        int entityInQueryIndex,
+        ref ComponentA compA, // ref is for read-write parameters
+        in ComponentB compB) // in is for read-only parameters
+        => { /* The code to execute */ }
+).Schedule();
+
+// Or a simplified version of it that only access the components
+Entities.ForEach(
+    (ref ComponentA compA,
+        in ComponentB compB) =>
+    => { /* The code to execute */ }
+    ).Schedule();
+
+// Like in a SystemAPi.Query we can use additional methos to precise the query
+// Here we exclude entity with ComponentC
+Entities
+.WithNone(ComponentC)
+.ForEach(
+    (ref ComponentA compA,
+        in ComponentB compB) =>
+    => { /* The code to execute */ }
+    ).Schedule();
+```
+
+> We can pass up to 8 parameters to `Entities.Foreach`, if more are needed [we need to define custom delegates](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/iterating-entities-foreach-define.html#custom-delegates).
+
+The full list of `Entities.Foreach` supported features is available [here](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/iterating-data-entities-foreach.html).
+
+For more information on `Entities.Foreach` check:
+- [Define and execute an Entities.ForEach lambda expression](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/iterating-entities-foreach-define.html)
+- [Select and access data](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/iterating-entities-foreach-select-data.html)
+- [Filtering data](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/iterating-entities-foreach-filtering.html)
+- [Use entity command buffers in Entities.ForEach](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/iterating-entities-foreach-ecb.html)
+
+### Manually iterate other data
+
+If for any we need to manage chunks in a way that is not supported by any of the solutiuon before, its possible to manually request all the archetype chunks in a native array and pass it to a custom `IJobParallelFor`.
+
+[Check the unity documentation for more info on this](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/iterating-manually.html).
 
 

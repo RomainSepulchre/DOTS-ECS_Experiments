@@ -17,7 +17,7 @@ namespace ECS.ECSExperiments
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            // TODO: It's a bit weird, when I used a If(useJobs) a query was made while being inside the if 
+            // TODO: It's a bit weird, when I used a If(useJobs) a query was made while being inside the if -> link to source generation -> Query is known even when not used ? 
 
             // Use jobs
             ProcessCubeMovementJob processCubeJob = new ProcessCubeMovementJob
