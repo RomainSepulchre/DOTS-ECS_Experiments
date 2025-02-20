@@ -7,13 +7,16 @@ using UnityEngine;
 using Unity.Mathematics;
 using Random = Unity.Mathematics.Random;
 using System;
+using Unity.Profiling;
 
 namespace ECS.ECSExperiments
 {
     // TODO: There is something i'm not doing well with ECB, performance seems worse than not using jobs:
     // Performance are lower when spawning one by one and better when spawning 5000 entities at once so maybe it less performant with a low number of entity to create
+    // Also I guess using jobs only offer a gain of performance when there is a lots of object to process and i'm only using one spawner -> check with more spawner entities
     // -> I probably need to playback the ecb later in the frame, I also need to try a parralel ECB
     // -> System update take a lot of time (0.04ms) even when there is no spawner that match the query, even when I use [RequireMatchingQueriesForUpdate] ?
+    //      => Fixed by using state.RequireForUpdate() by still why does it take so much time when there is nothing to do ?
 
     // TODO: Retry to add a component
 
@@ -21,6 +24,10 @@ namespace ECS.ECSExperiments
     {
         EntityQuery spawnerQuery;
         EntityQuery cubeQuery;
+
+        static readonly ProfilerMarker SpawnerJob_beforeJob = new ProfilerMarker("SpawnerJob.beforeJob");
+        static readonly ProfilerMarker SpawnerJob_job = new ProfilerMarker("SpawnerJob.job");
+        static readonly ProfilerMarker SpawnerJob_ecbPlayback = new ProfilerMarker("SpawnerJob.ecbPlayback");
 
         [BurstCompile]
         public void OnCreate(ref SystemState state)
@@ -41,6 +48,7 @@ namespace ECS.ECSExperiments
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
+            SpawnerJob_beforeJob.Begin();
             EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
             NativeArray<bool> boolResult = new NativeArray<bool>(1, Allocator.TempJob);
             SpawnCubeJob spawnJob = new SpawnCubeJob
@@ -51,15 +59,20 @@ namespace ECS.ECSExperiments
                 AllCubesSpawned = boolResult,
                 CubeCount = cubeQuery.CalculateEntityCount()
             };
+            SpawnerJob_beforeJob.End();
 
+            SpawnerJob_job.Begin();
             JobHandle spawnHandle = spawnJob.Schedule(spawnerQuery, state.Dependency);
 
             spawnHandle.Complete(); // TODO: Assign state.dependency instead
+            SpawnerJob_job.End();
 
+            SpawnerJob_ecbPlayback.Begin();
             ecb.Playback(state.EntityManager);
             ecb.Dispose();
 
             if(spawnJob.AllCubesSpawned[0]) state.Enabled = false;
+            SpawnerJob_ecbPlayback.End();
         }
     }
 
@@ -111,6 +124,8 @@ namespace ECS.ECSExperiments
 
             // Set random speed, timer and move direction value
             SetCubeRandomValues(newEntity, random);
+
+            Ecb.AddComponent<AddComponentTag>(newEntity);
         }
 
         private void ProcessSpawner(Spawner spawner)
@@ -128,6 +143,8 @@ namespace ECS.ECSExperiments
 
             // Set random speed, timer and move direction value
             SetCubeRandomValues(newEntity, random);
+
+            Ecb.AddComponent<AddComponentTag>(newEntity);
         }
 
         private void SetCubeRandomValues(Entity newEntity, Random random)

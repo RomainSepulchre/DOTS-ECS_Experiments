@@ -42,8 +42,9 @@ namespace ECS.ECSExperiments
 
             JobHandle processCubeHandle = processCubeJob.ScheduleParallel(state.Dependency);
 
-            // TODO: Try to set state.Dependency instead of completing early
-            processCubeHandle.Complete();
+            // Assign job handle to state.Dependency to make sure my job will complete before next frame without any component conflict
+            // ? The job is processed parrallely from PresentationSystemGroup could this have an impact on rendering (position change only rendered the next frame ?)
+            state.Dependency = processCubeHandle;
 
             // No Jobs
             //foreach ((RefRW<Cube> cube, RefRW<LocalTransform> localTf) in SystemAPI.Query<RefRW<Cube>, RefRW<LocalTransform>>())

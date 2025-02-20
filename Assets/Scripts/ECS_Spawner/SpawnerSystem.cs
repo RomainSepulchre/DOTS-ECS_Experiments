@@ -21,6 +21,8 @@ namespace ECS.ECSExperiments
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
+            // TODO: From what I understood calling System API already automatically cache the query
+            // -> So i'm not sure it's needed to declare them here
             cubeQuery = SystemAPI.QueryBuilder().WithAll<Cube>().Build();
             spawnerQuery = SystemAPI.QueryBuilder().WithAllRW<Spawner>().WithNone<SpawnerUseJobs>().Build();
 
@@ -36,8 +38,9 @@ namespace ECS.ECSExperiments
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
+            EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
             bool allCubesSpawned = false;
-            foreach (RefRW<Spawner> spawner in SystemAPI.Query<RefRW<Spawner>>().WithNone<SpawnerUseJobs>())
+            foreach ( var spawner in SystemAPI.Query<RefRW<Spawner>>().WithNone<SpawnerUseJobs>())
             {
                 bool spawnAllCubes = spawner.ValueRO.SpawnAllAtFirstFrame;
                 int cubeCount = cubeQuery.CalculateEntityCount();
@@ -49,7 +52,8 @@ namespace ECS.ECSExperiments
 
                     for (int i = 0; i < spawnCount; i++)
                     {
-                        SpawnCube(ref state, spawner, i);
+                        //SpawnCube(ref state, spawner, i);
+                        SpawnCube(ref state, spawner, i, ecb);
                     }
 
                     allCubesSpawned = true;
@@ -63,9 +67,13 @@ namespace ECS.ECSExperiments
                         continue;
                     }
 
-                    ProcessSpawner(ref state, spawner);
+                    //ProcessSpawner(ref state, spawner);
+                    ProcessSpawner(ref state, spawner, ecb);
                 }
             }
+
+            ecb.Playback(state.EntityManager);
+            ecb.Dispose();
 
             // If all cubes spawned or, disable the system
             if (allCubesSpawned) state.Enabled = false;
@@ -91,6 +99,28 @@ namespace ECS.ECSExperiments
             }
         }
 
+        private void ProcessSpawner(ref SystemState state, RefRW<Spawner> spawner, EntityCommandBuffer ecb)
+        {
+            if (spawner.ValueRO.NextSpawnTime < SystemAPI.Time.ElapsedTime)
+            {
+                // Instantiate new entity
+                Entity newEntity = state.EntityManager.Instantiate(spawner.ValueRO.Prefab);
+
+                Random random = Random.CreateFromIndex((uint)(SystemAPI.Time.ElapsedTime / SystemAPI.Time.DeltaTime));
+
+                // Set entity spawn position
+                state.EntityManager.SetComponentData(newEntity, LocalTransform.FromPosition(spawner.ValueRO.SpawnPosition + random.NextFloat3(-10, 10)));
+
+                // Reset next spawn time
+                spawner.ValueRW.NextSpawnTime = (float)SystemAPI.Time.ElapsedTime + spawner.ValueRO.SpawnRate;
+
+                // Set random speed, timer and move direction value
+                SetCubeRandomValues(ref state, newEntity, random);
+
+                ecb.AddComponent<AddComponentTag>(newEntity);
+            }
+        }
+
         private void SpawnCube(ref SystemState state, RefRW<Spawner> spawner, int index)
         {
             // Instantiate new entity
@@ -103,6 +133,22 @@ namespace ECS.ECSExperiments
 
             // Set random speed, timer and move direction value
             SetCubeRandomValues(ref state, newEntity, random);
+        }
+
+        private void SpawnCube(ref SystemState state, RefRW<Spawner> spawner, int index, EntityCommandBuffer ecb)
+        {
+            // Instantiate new entity
+            Entity newEntity = state.EntityManager.Instantiate(spawner.ValueRO.Prefab);
+
+            Random random = Random.CreateFromIndex((uint)((SystemAPI.Time.ElapsedTime / SystemAPI.Time.DeltaTime) + index));
+
+            // Set entity spawn position
+            state.EntityManager.SetComponentData(newEntity, LocalTransform.FromPosition(spawner.ValueRO.SpawnPosition + random.NextFloat3(-10, 10)));
+
+            // Set random speed, timer and move direction value
+            SetCubeRandomValues(ref state, newEntity, random);
+
+            ecb.AddComponent<AddComponentTag>(newEntity);
         }
 
         private void SetCubeRandomValues(ref SystemState state, Entity newEntity, Random random)
