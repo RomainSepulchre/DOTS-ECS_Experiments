@@ -18,6 +18,9 @@ namespace ECS.ECSExperiments
     // -> I probably need to playback the ecb later in the frame, I also need to try a parralel ECB
     // -> System update take a lot of time (0.04ms) even when there is no spawner that match the query, even when I use [RequireMatchingQueriesForUpdate] ?
     //      => Fixed by using state.RequireForUpdate() by still why does it take so much time when there is nothing to do ?
+    // => Passing an EntityQuery to an EntityManager method is the most efficient way to make structural changes. This is because the method can operate on whole chunks rather than individual entities.
+    // => The added overhead of using an EntityCommandBuffer might be worth it to avoid introducing a new sync point.
+    // -> On main thread spawn system, doing all structural changes in an ecb takes at worse the same time and is sometimes faster, what is happening with the ecb in my job ???
 
     // TODO: Retry to add a component
 

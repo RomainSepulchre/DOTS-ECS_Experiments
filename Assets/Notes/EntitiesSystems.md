@@ -269,7 +269,7 @@ public partial struct MySystem : ISystem
 
 #### System sorting order
 
-We can control the sorting of a system group by applying `[UpdateBefore()]` or `[UpdateAfter()]` attributes on one of its systems. The attributes `[OrderFirst]` and `[OrderLast]` can also be used and take precedence over `[UpdateBefore()]` and `[UpdateAfter()]`.  
+We can control the sorting of a system group by applying `[UpdateBefore()]` or `[UpdateAfter()]` attributes on one of its systems. The parameter `OrderFirst` and `OrderLast` of `[UpdateInGroup()]` can also be used and take precedence over `[UpdateBefore()]` and `[UpdateAfter()]`.  
 These attributes only apply relative to a children that is part of the same system group.
 
 In the example below `MySystem` will always be ordered after `OtherSystemTypeA` but before `OtherSystemTypeB`.
