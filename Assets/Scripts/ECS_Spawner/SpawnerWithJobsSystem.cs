@@ -8,6 +8,7 @@ using Unity.Mathematics;
 using Random = Unity.Mathematics.Random;
 using System;
 using Unity.Profiling;
+using ECS.ECSExperiments;
 
 namespace ECS.ECSExperiments
 {
@@ -49,30 +50,44 @@ namespace ECS.ECSExperiments
         public void OnUpdate(ref SystemState state)
         {
             SpawnerJob_beforeJob.Begin();
-            EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
-            NativeArray<bool> boolResult = new NativeArray<bool>(1, Allocator.TempJob);
-            SpawnCubeJob spawnJob = new SpawnCubeJob
+            var singleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
+            EntityCommandBuffer ecb = singleton.CreateCommandBuffer(state.WorldUnmanaged);
+            SpawnerJob_beforeJob.End();
+
+            //
+            // Single job
+            //
+
+            //SpawnerJob_job.Begin();
+            //SpawnCubeJob spawnJob = new SpawnCubeJob
+            //{
+            //    ElapsedTime = SystemAPI.Time.ElapsedTime,
+            //    DeltaTime = SystemAPI.Time.DeltaTime,
+            //    Ecb = ecb,
+            //    CubeCount = cubeQuery.CalculateEntityCount()
+            //};
+            
+            //JobHandle spawnHandle = spawnJob.Schedule(spawnerQuery, state.Dependency);
+
+            //state.Dependency = spawnHandle;
+            //SpawnerJob_job.End();
+
+            //
+            // ParralelJob
+            //
+
+            SpawnerJob_job.Begin();
+            SpawnCubeJobParallel spawnJobParallel = new SpawnCubeJobParallel
             {
                 ElapsedTime = SystemAPI.Time.ElapsedTime,
                 DeltaTime = SystemAPI.Time.DeltaTime,
-                Ecb = ecb,
-                AllCubesSpawned = boolResult,
+                Ecb = ecb.AsParallelWriter(),
                 CubeCount = cubeQuery.CalculateEntityCount()
             };
-            SpawnerJob_beforeJob.End();
 
-            SpawnerJob_job.Begin();
-            JobHandle spawnHandle = spawnJob.Schedule(spawnerQuery, state.Dependency);
-
-            spawnHandle.Complete(); // TODO: Assign state.dependency instead
+            JobHandle spawnParallelHandle = spawnJobParallel.ScheduleParallel(spawnerQuery, state.Dependency);
+            state.Dependency = spawnParallelHandle;
             SpawnerJob_job.End();
-
-            SpawnerJob_ecbPlayback.Begin();
-            ecb.Playback(state.EntityManager);
-            ecb.Dispose();
-
-            if(spawnJob.AllCubesSpawned[0]) state.Enabled = false;
-            SpawnerJob_ecbPlayback.End();
         }
     }
 
@@ -83,11 +98,11 @@ namespace ECS.ECSExperiments
         [ReadOnly] public float DeltaTime;
         [ReadOnly] public int CubeCount;
         public EntityCommandBuffer Ecb;
-        public NativeArray<bool> AllCubesSpawned;
         
 
-        public void Execute(ref Spawner spawner)
+        public void Execute(Entity entity, ref Spawner spawner)
         {
+            bool allCubesSpawned = false;
             if (spawner.SpawnAllAtFirstFrame)
             {
                 // Each Spawner spawns its spawnCount of Cube then disable itself
@@ -97,19 +112,23 @@ namespace ECS.ECSExperiments
                 {
                     SpawnCube(spawner, i);
                 }
-                AllCubesSpawned[0] = true;
+                allCubesSpawned = true;
             }
             else
             {
                 //// Spawn a cube at every spawn time until the spawn count is reached
                 if (CubeCount >= spawner.SpawnCount)
                 {
-                    AllCubesSpawned[0] = true;
-                    return;
+                    allCubesSpawned = true;
                 }
-
-                ProcessSpawner(spawner);
+                else
+                {
+                    ProcessSpawner(spawner);
+                }
             }
+
+            // Disable the entity instead of disabling the system because otherwise I need to complete the job inside the system and can't pass the job hadnle to the system
+            if (allCubesSpawned) Ecb.AddComponent<Disabled>(entity);
         }
 
         private void SpawnCube(Spawner spawner, int index)
@@ -159,66 +178,91 @@ namespace ECS.ECSExperiments
             Ecb.SetComponent(newEntity, cube);
         }
     }
+
+    [BurstCompile]
+    public partial struct SpawnCubeJobParallel : IJobEntity
+    {
+        [ReadOnly] public double ElapsedTime;
+        [ReadOnly] public float DeltaTime;
+        [ReadOnly] public int CubeCount;
+        public EntityCommandBuffer.ParallelWriter Ecb;
+
+        public void Execute(Entity entity, [ChunkIndexInQuery] int chunkIndexInQuery, ref Spawner spawner)
+        {
+            bool allCubesSpawned = false;
+            if (spawner.SpawnAllAtFirstFrame)
+            {
+                // Each Spawner spawns its spawnCount of Cube then disable itself
+                int spawnCount = spawner.SpawnCount;
+
+                for (int i = 0; i < spawnCount; i++)
+                {
+                    SpawnCube(spawner, i, chunkIndexInQuery);
+                }
+                allCubesSpawned = true;
+            }
+            else
+            {
+                //// Spawn a cube at every spawn time until the spawn count is reached
+                if (CubeCount >= spawner.SpawnCount)
+                {
+                    allCubesSpawned = true;
+                }
+                else
+                {
+                    ProcessSpawner(spawner, chunkIndexInQuery);
+                }
+            }
+
+            // Disable the entity instead of disabling the system because otherwise I need to complete the job inside the system and can't pass the job hadnle to the system
+            if (allCubesSpawned) Ecb.AddComponent<Disabled>(chunkIndexInQuery, entity);
+        }
+
+        private void SpawnCube(Spawner spawner, int index, int chunkIndexInQuery)
+        {
+            // Instantiate new entity
+            Entity newEntity = Ecb.Instantiate(chunkIndexInQuery, spawner.Prefab);
+
+            Random random = Random.CreateFromIndex((uint)((ElapsedTime / DeltaTime) + index));
+
+            // Set entity spawn position
+            Ecb.SetComponent(chunkIndexInQuery, newEntity, LocalTransform.FromPosition(spawner.SpawnPosition + random.NextFloat3(-10, 10)));
+
+            // Set random speed, timer and move direction value
+            SetCubeRandomValues(newEntity, random, chunkIndexInQuery);
+
+            Ecb.AddComponent<AddComponentTag>(chunkIndexInQuery, newEntity);
+        }
+
+        private void ProcessSpawner(Spawner spawner, int chunkIndexInQuery)
+        {
+            // Instantiate new entity
+            Entity newEntity = Ecb.Instantiate(chunkIndexInQuery, spawner.Prefab);
+
+            Random random = Random.CreateFromIndex((uint)(ElapsedTime / DeltaTime));
+
+            // Set entity spawn position
+            Ecb.SetComponent(chunkIndexInQuery, newEntity, LocalTransform.FromPosition(spawner.SpawnPosition + random.NextFloat3(-10, 10)));
+
+            // Reset next spawn time
+            spawner.NextSpawnTime = (float)ElapsedTime + spawner.SpawnRate;
+
+            // Set random speed, timer and move direction value
+            SetCubeRandomValues(newEntity, random, chunkIndexInQuery);
+
+            Ecb.AddComponent<AddComponentTag>(chunkIndexInQuery, newEntity);
+        }
+
+        private void SetCubeRandomValues(Entity newEntity, Random random, int chunkIndexInQuery)
+        {
+            Cube cube = new Cube(); // I can't get component in an ECB so I need to create the component value myself
+            cube.MoveDirection = random.NextFloat3Direction();
+            cube.MoveSpeed = random.NextFloat(0.5f, 5f);
+            cube.MoveForward = true;
+            cube.TimerDuration = random.NextFloat(1f, 5f);
+            cube.Timer = cube.TimerDuration;
+
+            Ecb.SetComponent(chunkIndexInQuery, newEntity, cube);
+        }
+    }
 }
-
-//
-// Multithreaded using jobs
-//
-
-//[BurstCompile]
-//public partial struct OptimizedSpawnerSystem : ISystem
-//{
-//    public void OnCreate(ref SystemState state)
-//    {
-//    }
-
-//    public void OnDestroy(ref SystemState state)
-//    {
-//    }
-
-//    [BurstCompile]
-//    public void OnUpdate(ref SystemState state)
-//    {
-//        EntityCommandBuffer.ParallelWriter ecb = GetEntityCommandBuffer(ref state);
-
-//        ProcessSpawnerJob spawnerJob = new ProcessSpawnerJob
-//        {
-//            ElapsedTime = SystemAPI.Time.ElapsedTime,
-//            Ecb = ecb
-//        };
-//        spawnerJob.ScheduleParallel();
-//    }
-
-//    private EntityCommandBuffer.ParallelWriter GetEntityCommandBuffer(ref SystemState state)
-//    {
-//        var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
-
-//        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
-
-//        return ecb.AsParallelWriter();
-//    }
-//}
-
-//[BurstCompile]
-//public partial struct ProcessSpawnerJob : IJobEntity
-//{
-//    public EntityCommandBuffer.ParallelWriter Ecb;
-//    public double ElapsedTime;
-
-//    private void Execute([ChunkIndexInQuery] int chunkIndex, ref Spawner spawner)
-//    {
-//        if (spawner.NextSpawnTime < ElapsedTime)
-//        {
-//            Entity newEntity = Ecb.Instantiate(chunkIndex, spawner.Prefab);
-
-//            Ecb.SetComponent(chunkIndex, newEntity, LocalTransform.FromPosition(spawner.SpawnPosition));
-
-//            spawner.NextSpawnTime = (float)ElapsedTime + spawner.SpawnRate;
-//        }
-//    }
-//}
-
-
-
-
-

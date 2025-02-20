@@ -2306,8 +2306,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 0.1
-  SpawnCount: 5000
-  SpawnAllAtFirstFrame: 1
+  SpawnCount: 10000
+  SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!4 &834341254
 Transform:
@@ -6140,7 +6140,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1921093915
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6155,8 +6155,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 0.1
-  SpawnCount: 5000
-  SpawnAllAtFirstFrame: 1
+  SpawnCount: 10000
+  SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!4 &1921093916
 Transform:
