@@ -1,8 +1,11 @@
 using Unity.Burst;
+using Unity.Burst.Intrinsics;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.ProBuilder.Shapes;
 using UnityEngine.SocialPlatforms;
@@ -32,19 +35,20 @@ namespace ECS.ECSExperiments
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            // TODO: It's a bit weird, when I used a If(useJobs) a query was made while being inside the if -> link to source generation -> Query is known even when not used ? 
+            // TODO: Query is known even when not used ? It's a bit weird, when I used a If(useJobs) a query was made while being inside the if
+            // => I'm pretty sure it's because of source generation and the fact that query are cached when using SystemAPI. I think the query is cached at compilation so its known by the system event if it is never called.
 
             // Use jobs
-            ProcessCubeMovementJob processCubeJob = new ProcessCubeMovementJob
-            {
-                DeltaTime = SystemAPI.Time.DeltaTime
-            };
+            //ProcessCubeMovementJob processCubeJob = new ProcessCubeMovementJob
+            //{
+            //    DeltaTime = SystemAPI.Time.DeltaTime
+            //};
 
-            JobHandle processCubeHandle = processCubeJob.ScheduleParallel(state.Dependency);
+            //JobHandle processCubeHandle = processCubeJob.ScheduleParallel(state.Dependency);
 
-            // Assign job handle to state.Dependency to make sure my job will complete before next frame without any component conflict
-            // ? The job is processed parrallely from PresentationSystemGroup could this have an impact on rendering (position change only rendered the next frame ?)
-            state.Dependency = processCubeHandle;
+            //// Assign job handle to state.Dependency to make sure my job will complete before next frame without any component conflict
+            //// ? The job is processed parrallely from PresentationSystemGroup could this have an impact on rendering (position change only rendered the next frame ?)
+            //state.Dependency = processCubeHandle;
 
             // No Jobs
             //foreach ((RefRW<Cube> cube, RefRW<LocalTransform> localTf) in SystemAPI.Query<RefRW<Cube>, RefRW<LocalTransform>>())
@@ -52,6 +56,18 @@ namespace ECS.ECSExperiments
             //    ProcessTimer(ref state, cube);
             //    MoveCube(ref state, cube, localTf);
             //}
+
+            // Use IJobChunk
+            ProcessCubeMovementChunkJob processCubeChunkJob = new ProcessCubeMovementChunkJob
+            {
+                CubeHandle = SystemAPI.GetComponentTypeHandle<Cube>(false),
+                LocalTfHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(false),
+                DeltaTime = SystemAPI.Time.DeltaTime
+            };
+
+            JobHandle processCubeChunkHandle = processCubeChunkJob.ScheduleParallel(cubeQuery ,state.Dependency);
+            state.Dependency = processCubeChunkHandle;
+
         }
 
         public void ProcessTimer(ref SystemState state, RefRW<Cube> cube)
@@ -87,7 +103,7 @@ namespace ECS.ECSExperiments
     [BurstCompile]
     public partial struct ProcessCubeMovementJob : IJobEntity
     {
-        public float DeltaTime;
+        [ReadOnly] public float DeltaTime;
 
         public void Execute(ref Cube cube, ref LocalTransform localTf)
         {
@@ -115,6 +131,55 @@ namespace ECS.ECSExperiments
             }
 
             localTf.Position = nextPos;
+        }
+    }
+
+    [BurstCompile]
+    public partial struct ProcessCubeMovementChunkJob : IJobChunk
+    {
+        public ComponentTypeHandle<Cube> CubeHandle;
+        public ComponentTypeHandle<LocalTransform> LocalTfHandle;
+        [ReadOnly] public float DeltaTime;
+
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+        {
+
+            NativeArray<Cube> cubes = chunk.GetNativeArray(ref CubeHandle);
+            NativeArray<LocalTransform> localTfs = chunk.GetNativeArray(ref LocalTfHandle);
+
+            ChunkEntityEnumerator enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
+
+            while(enumerator.NextEntityIndex(out int i))
+            {
+                // Process Timer
+                Cube newCube = cubes[i];
+                float nextTimer = cubes[i].Timer - DeltaTime;
+
+                if (nextTimer <= 0)
+                {
+                    nextTimer = cubes[i].TimerDuration;
+                    newCube.MoveForward = !cubes[i].MoveForward;
+                }
+                newCube.Timer = nextTimer;
+                cubes[i] = newCube;
+
+                // Move Cube
+                LocalTransform newLocalTf = localTfs[i];
+                bool moveFoward = cubes[i].MoveForward;
+                float3 nextPos;
+
+                if (moveFoward)
+                {
+                    nextPos = localTfs[i].Position + (cubes[i].MoveDirection * cubes[i].MoveSpeed * DeltaTime);
+                }
+                else
+                {
+                    nextPos = localTfs[i].Position - (cubes[i].MoveDirection * cubes[i].MoveSpeed * DeltaTime);
+                }
+
+                newLocalTf.Position = nextPos;
+                localTfs[i] = newLocalTf;
+            }
         }
     }
 }

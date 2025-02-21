@@ -110,8 +110,6 @@ Here is a few of short list of the main parameters:
     - `[ChunkIndexInQuery]`: Set on a `int` parameter in `Execute()`, the int parameter marked by the attribute will return the current archetype chunk index in a query.
     - `[EntityIndexInChunk]`: Set on a `int` parameter in `Execute()`, the int parameter marked by the attribute will return the current entity index in the current archetype chunk. Associated with [ChunkIndexInQuery] it give us a unique identifier per entity.
 
-
-
 #### Specify a query for our job
 
 If we need to do a more complex query we can set an `EntityQuery` and pass as a parameter when scheduling our job.
@@ -181,9 +179,103 @@ public partial struct MyEntityJob : IJobEntity
 
 ### [IJobChunk][ijobchunk]
 
-TODO: TEST THIS IN REAL CONDITION
+When we use an `IJobChunk` there are some differences with`IJobEntity`:
+
+First of all, contrary to an `IJobEntity` job, an `IJobChunk` require a query to schedule the job. The query tells the specifity of the entity we want to access with the job (the components the must have or the one we want to exclude).
+
+An `IJobChunk` also requires we declare in the job a `ComponentTypeHandle` for every type of we want to access in the job. This will be needed to get the components from the chunk. We get the `ComponentTypeHandle` from the system using `SystemAPI.GetComponentTypeHandle<T>()` and we pass them to the job when we declare the job struct.
+
+The `Execute()` parameter of an `IJobChunk` are:
+
+- `ArchetypeChunk chunk`: `ArchetypeChunk` that contains the entities and component for this iteration of the job.
+- `int unfilteredChunkIndex`: the index of the current chunk in the list of all the chunks that match our query.
+- `bool useEnabledMask`: a `bool` that provides an early-out in cases where `chunkEnabledMask` should be safely ignored.
+- `v128 chunkEnabledMask`: a bitmask, if bit N in the mask is set, then entity N matches the query and the job should process it.
+
+`useEnabledMask` and `chunkEnabledMask` are used by `IJobChunk` to help deal with enableable components and efficiently identify the entities that it should process and the one where a required component is disabled. 
+
+To access the components, we have to create `NativeArray` for store them. Then we get them from the chunk passed in the `Execute()` parameters using `chunk.GetNativeArray(ref ComponentTypeHandle)` with the `ComponentTypeHandle` we declared in the job as parameter. Finally, we create and use a `ChunkEntityEnumerator` to go through every entity in our chunk.
+
+> It's also possible to iterate over all entities in a chunk with a for loop that goes from 0 to `chunk.Count` when we don't process eneable components. However, in this case we should add `Assert.IsFalse(useEnabledMask)` in the execute method to be sure we don't process any non-matching entities and if that happens we need to switch to a `ChunkEntityEnumerator`.
+
+That's how it look like in actual code:
 
 ```c#
+// A simple component for the example
+public struct Movement : IComponentData
+{
+    public float Speed;
+    public float3 Direction;
+}
+
+[BurstCompile]
+public partial struct MyChunkJob : IJobChunk
+{
+    // Every component accessed in the job must have a ComponentTypeHandle declared in the job
+    public ComponentTypeHandle<LocalTransform> LocalTfHandle;
+    public ComponentTypeHandle<Movement> MoveHandle;
+
+    // We can still pass other parameter in the job
+    [ReadOnly] public float DeltaTime;
+
+    // Execute() method of IJobChunk has specific parameter
+    public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+    {
+        // We create NativeArray of components and we get the component from the chunk using the ComponentTypeHandles
+        NativeArray<LocalTransform> localTfs = chunk.GetNativeArray(ref LocalTfHandle);
+        NativeArray<Movement> movements = chunk.GetNativeArray(ref MoveHandle);
+
+        // We use an ChunkEntityEnumerator to go through all the entities in our chunk
+        ChunkEntityEnumerator enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
+        while(enumerator.NextEntityIndex(out int i))
+        {
+            // We can read component data from the NativeArrays but we can't set them directly we need to assign a component with new data
+            LocalTransform newLocalTf = localTfs[i]; // copy the data of the current LocalTransform to modify them
+            newLocaTf.Position =  localTfs[i].position + (movements[i].Direction * movements[i].Speed * DeltaTime); // Modify the position in our new component
+            localTfs[i] = newLocaTf; // Apply changes in the NativeArray
+        }
+    }
+}
+
+// The system that schedule the IJobChunk
+public partial struct MySystem : ISystem
+{
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        // We need to build a query to pass as argument when sheduling the job
+        EntityQuery jobQuery = SystemAPI.QueryBuilder().WithAllRW<LocalTransform>().WithAll<Movement>.Build();
+
+        MyChunkJob chunkJob = new MyChunkJob
+        {
+            // We retrieve ComponentTypeHandle using SystemAPI.GetComponentTypeHandle(bool), the bool parameter tell if we only need read-only access
+            LocalTfHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(false), // false because we need read-write access
+            MoveHandle = SystemAPI.GetComponentTypeHandle<Movement>(true), // true because we need read-only is enough
+            DeltaTime = SystemAPI.Time.DeltaTime
+        };
+
+        // We schedule the job and pass the query as argument
+        JobHandle chunkJobHandle = chunkJob.ScheduleParallel(jobQuery, state.Dependency); // we pass the state.Dependency as depedency to respect dependency rules (see SystemState Dependency)
+        state.Dependency = chunkJobHandle; // We assign our jobHandle to the system dependency to respect dependency rules (see SystemState Dependency)
+    }
+}
+```
+
+#### Optional Components
+
+**Do not include optionnal components in the query used with `IJobChunk`**, the `ArchetypeChunk` parameter of `IJobChunk` `Execute()` has the **`ArchetypeChunk.Has()` method that can be used to handle optionnal components**. Since all entities in a chunk have the same components we only have to do the check once per chunk and not once per entity.
+
+``` C#
+//... In a IJobChunk
+
+public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+{
+    // We only need to the check once by chunk (all components are the same in a chunk)
+    if(chunk.Has<ComponentA>() || chunk.Has<ComponentB>()) // Do something only if the chunk has ComponentA or ComponentB
+    {
+        // ... get NativeArray and iterate on the ChunkEntityEnumerator to excute on the operation we need to do on the entities
+    }
+}
 ```
 
 ## Synchronization points (Sync points)
@@ -288,6 +380,47 @@ The `EntityCommandBuffer` solve two problems:
 2. Performing a structural change (ex: creating a new entity) create a [sync point](#synchronization-points-sync-points) which force to wait the completion of all jobs.
     - &rarr; Instead of creating an unnecessary sync point we defer the structural changes to a consilated point later in the frame.
 
+Using an `EntityCommandBuffer` has an overhead but this overhead might be worth it if it allow to avoid introducing a new sync point.
+
+On the main thread passing an `EntityQuery` to an `EntityManager` method is the most efficient way to makes structural changes because it can operate on whole chunks rather than individual entities.
+
+This is an example of a system scheduling a job that use an `EntityCommandBuffer`.
+
+```C#
+[BurstCompile]
+public partial struct MyJob : IJobEntity // The job that use the EntityCommandBuffer
+{
+    public EntityCommandBuffer Ecb;
+
+    public void Execute(Entity entity, [ChunkIndexInQuery] int chunkIndexInQuery, ref ComponentA compA)
+    {
+        // Instead of doing strutural change with EntityManager, we record them in the EntityCommandBuffer
+        ECB.AddComponent<ComponentB>(entity);
+        // ... other operations
+    }
+}
+
+public partial struct MySystem : ISystem
+{
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        // We create an ECB
+        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
+
+        // Pass the ECB created  to our job and schedule the job
+        JobHandle jobHandle = new MyJob { Ecb = ecb }.Schedule();
+
+        // We need to complete the job before we can playback the ECB
+        jobHandle.Complete()
+        ecb.Playback(state.EntityManager); // We need to pass the EntityManager that will execute the command as parameter
+
+        // When we are done with our ECB we need to manually dispose it.
+        ecb.Dispose();
+    }
+}
+```
+
 [entitycommandbuffer]: https://docs.unity3d.com/Packages/com.unity.entities@0.7/manual/entity_command_buffer.html
 
 ### Entity Command Buffer methods
@@ -344,6 +477,38 @@ Of course, the sort key passed must determiniscally correspond to the command re
 > **Sort key with `IJobChunk`**:
 > the `unfilteredChunkIndex` of the `Execute()` method should be used.
 
+Here is an example of a parallel `IJobEntity` using an `EntityCommandBuffer.ParallelWriter`
+
+```C#
+[BurstCompile]
+public partial struct MyJob : IJobEntity // The job that use the EntityCommandBuffer.ParallelWriter
+{
+    public EntityCommandBuffer.ParallelWriter EcbParallel;
+
+    public void Execute(Entity entity, [ChunkIndexInQuery] int chunkIndexInQuery, ref ComponentA compA)
+    {
+        // For any command recorded in the ECB we pass a sortIndex as first parameter (here chunkIndexInQuery since we are in a IJobEntity)
+        EcbParallel.AddComponent<ComponentB>(chunkIndexInQuery, entity);
+        // ... other operations
+    }
+}
+
+public partial struct MySystem : ISystem
+{
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        // We create a new ECB
+        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
+
+        // Pass the ECB created asParallelWriter to our job and schedule the job in parallel
+        MyJob job = new MyJob { EcbParallel = ecb.AsParallelWriter() }.ScheduleParallel();
+
+        // ... Playback and dispose the ecb once the job is complete
+    }
+}
+```
+
 ### Multi-Playback
 
 The option `PlaybackPolicy.MultiPlayback` can be used when creating an `EntityCommandBuffer` to allow the `Playback()` method to be called more than once.
@@ -353,8 +518,6 @@ Otherwise, calling several time `Playback()` on the same `EntityCommandBuffer` w
 > This is mainly useful to spawn the same set of entities repetetively.
 
 ### Entity Command Buffer Systems
-
-> *** I need to understand better how to use this in code *** 
 
 An [`EntityCommandBufferSystem`](https://docs.unity3d.com/Packages/com.unity.entities@0.7/api/Unity.Entities.EntityCommandBufferSystem.html) is a specific type of system that allow to play back the commands recorded in an `EntityCommandBuffer` at a clearly defined point in the frame.
 
@@ -367,6 +530,31 @@ In most of the case, it's not needed an `EntityCommandBufferSystem` ourself. The
 - There is no `EndPresentationEntityCommandBufferSystem` because it the same as using `BeginInitializationEntityCommandBufferSystem` (the end of a frame and the beginning of the next frame is the same point in time)
 
 > An `EntityCommandBuffer` instance created from a `EntityCommandBufferSystem` will be automatically played back and disposed at the next `EntityCommandBufferSystem` update. It should never be manually played back or disposed.
+
+This an example of how to create an `EntityCommandBuffer` from `BeginSimulationEntityCommandBufferSystem`.
+
+```C#
+//... In a system update
+
+// Get BeginSimulationEntityCommandBufferSystem singleton
+ var singleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
+ EntityCommandBuffer ecb = singleton.CreateCommandBuffer(state.WorldUnmanaged); // Create the ECB from the EntityCommandBufferSystem singleton
+
+// Pass the ECB created from BeginSimulationEntityCommandBufferSystem to our job
+ MyJob job = new MyJob { Ecb = ecb }.Schedule();
+
+ //... No need to wait job completion to playback and dispose the ECB, it's automatically done in BeginSimulationEntityCommandBufferSystem
+```
+
+### Personnal notes after testing ECB
+
+When using an `EntityCommandBuffer` in a `IJobEntity` the performance are really weird and become worse than just doing everything on the main thread. The job itself take a normal amount of time but the `EntityCommandBuffer` playback is taking an anormally long time even when being playbacked in an `EntityCommandBufferSystem`.
+
+Maybe my test project was not really relevant for ECB, I had only one spawner system spawning one entity at a fixed time rate. When I tried to spawn 5000 entities at once in the same ECB, the playback started to be more performant than doing everything on the main thread. **I guess that ECB performance is better than main thread when playing back a huge number of commands**.
+
+Also with one spawner that spawns entity one by one, **using an ECB in the main thread and calling the playback immediately was way more performant than the playback of an ECB used in jobs**.
+
+Another weird thing I noted is that if I didn't use `state.RequireForUpdate()` to prevent the system update to run when there is no spawner entity, the spawner system that was using jobs and ECB was taking a lot of time (0.04ms) to do absolutely nothing. **So using `state.RequireForUpdate()` seems important with systems that use jobs and ECB**.
 
 ## Job scheduling overhead
 

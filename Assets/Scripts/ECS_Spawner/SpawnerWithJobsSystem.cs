@@ -6,23 +6,20 @@ using Unity.Transforms;
 using UnityEngine;
 using Unity.Mathematics;
 using Random = Unity.Mathematics.Random;
-using System;
 using Unity.Profiling;
-using ECS.ECSExperiments;
 
 namespace ECS.ECSExperiments
 {
     // TODO: There is something i'm not doing well with ECB, performance seems worse than not using jobs:
     // Performance are lower when spawning one by one and better when spawning 5000 entities at once so maybe it less performant with a low number of entity to create
     // Also I guess using jobs only offer a gain of performance when there is a lots of object to process and i'm only using one spawner -> check with more spawner entities
-    // -> I probably need to playback the ecb later in the frame, I also need to try a parralel ECB
-    // -> System update take a lot of time (0.04ms) even when there is no spawner that match the query, even when I use [RequireMatchingQueriesForUpdate] ?
+    // ? I probably need to playback the ecb later in the frame, I also need to try a parralel ECB
+    //      => it's a little bit better but ECB still takes too much time
+    // ? System update take a lot of time (0.04ms) even when there is no spawner that match the query, even when I use [RequireMatchingQueriesForUpdate] ?
     //      => Fixed by using state.RequireForUpdate() by still why does it take so much time when there is nothing to do ?
-    // => Passing an EntityQuery to an EntityManager method is the most efficient way to make structural changes. This is because the method can operate on whole chunks rather than individual entities.
-    // => The added overhead of using an EntityCommandBuffer might be worth it to avoid introducing a new sync point.
-    // -> On main thread spawn system, doing all structural changes in an ecb takes at worse the same time and is sometimes faster, what is happening with the ecb in my job ???
-
-    // TODO: Retry to add a component
+    // ? Doing all structural changes in an ecb on main thread spawn system takes at worse the same time and is sometimes faster, what is happening with the ecb in my job ???
+    // ! Passing an EntityQuery to an EntityManager method is the most efficient way to make structural changes. This is because the method can operate on whole chunks rather than individual entities.
+    // ! The added overhead of using an EntityCommandBuffer might be worth it to avoid introducing a new sync point.
 
     public partial struct SpawnerWithJobsSystem : ISystem
     {
@@ -69,7 +66,7 @@ namespace ECS.ECSExperiments
             //    Ecb = ecb,
             //    CubeCount = cubeQuery.CalculateEntityCount()
             //};
-            
+
             //JobHandle spawnHandle = spawnJob.Schedule(spawnerQuery, state.Dependency);
 
             //state.Dependency = spawnHandle;
