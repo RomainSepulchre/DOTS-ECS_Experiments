@@ -36,3 +36,8 @@
     - [Comparer, IComparer<T> interfaces](Assets/Notes/OtherNotes.md#icomparer-icomparer-comparer-and-icomparable)
     - [Bitwise and shift operations](Assets/Notes/OtherNotes.md#bitwise-and-shift-operations)
     - [Other things to check later](Assets/Notes/OtherNotes.md#other-things-to-check-later)
+
+
+  ## Links:
+  DOTS animation wiki: https://discussions.unity.com/t/dots-animation-options-wiki/894948
+  
