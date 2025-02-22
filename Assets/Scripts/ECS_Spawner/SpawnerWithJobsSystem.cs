@@ -21,7 +21,6 @@ namespace ECS.ECSExperiments
     // ! Passing an EntityQuery to an EntityManager method is the most efficient way to make structural changes. This is because the method can operate on whole chunks rather than individual entities.
     // ! The added overhead of using an EntityCommandBuffer might be worth it to avoid introducing a new sync point.
 
-    // TODO: ADD SPAWN COUNT CHANGE + SPAWN MANAGER TOTAL COUNT
     public partial struct SpawnerWithJobsSystem : ISystem
     {
         EntityQuery spawnerQuery;
@@ -58,6 +57,17 @@ namespace ECS.ECSExperiments
         public void OnUpdate(ref SystemState state)
         {
             SpawnerJob_beforeJob.Begin();
+            int cubeCount = cubeQuery.CalculateEntityCount();
+            int maxSpawnLimit = SystemAPI.GetSingleton<SpawnersManager>().MaximumSpawnCount;
+
+            if(cubeCount >= maxSpawnLimit)
+            {
+                // Disable system if we reached the spawn limit for all the spawner entities
+                state.Enabled = false;
+                SpawnerJob_beforeJob.End();
+                return;
+            }
+
             var singleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
             EntityCommandBuffer ecb = singleton.CreateCommandBuffer(state.WorldUnmanaged);
             SpawnerJob_beforeJob.End();
@@ -72,7 +82,8 @@ namespace ECS.ECSExperiments
             //    ElapsedTime = SystemAPI.Time.ElapsedTime,
             //    DeltaTime = SystemAPI.Time.DeltaTime,
             //    Ecb = ecb,
-            //    CubeCount = cubeQuery.CalculateEntityCount()
+            //    CubeCount = cubeCount,
+            //    MaxSpawnLimit = maxSpawnLimit
             //};
 
             //JobHandle spawnHandle = spawnJob.Schedule(spawnerQuery, state.Dependency);
@@ -90,7 +101,8 @@ namespace ECS.ECSExperiments
                 ElapsedTime = SystemAPI.Time.ElapsedTime,
                 DeltaTime = SystemAPI.Time.DeltaTime,
                 Ecb = ecb.AsParallelWriter(),
-                CubeCount = cubeQuery.CalculateEntityCount()
+                CubeCount = cubeCount,
+                MaxSpawnLimit = maxSpawnLimit
             };
 
             JobHandle spawnParallelHandle = spawnJobParallel.ScheduleParallel(spawnerQuery, state.Dependency);
@@ -105,44 +117,44 @@ namespace ECS.ECSExperiments
         [ReadOnly] public double ElapsedTime;
         [ReadOnly] public float DeltaTime;
         [ReadOnly] public int CubeCount;
+        [ReadOnly] public int MaxSpawnLimit;
         public EntityCommandBuffer Ecb;
         
 
         public void Execute(Entity entity, ref Spawner spawner)
         {
-            bool allCubesSpawned = false;
+            // We need to check this early because of ECB playback delay (we need to be sure the spawn count wasn't changed between this update and the previous) 
+            if (spawner.SpawnCount >= spawner.SpawnMax)
+            {
+                Ecb.SetEnabled(entity, false);
+                return;
+            }
+
             if (spawner.SpawnAllAtFirstFrame)
             {
-                // Each Spawner spawns its spawnCount of Cube then disable itself
-                int spawnCount = spawner.SpawnCount;
+                // Each Spawner spawns its SpawnMax of Cube then disable itself
+                Spawner tempSpawner = spawner; // We need a temporary struct on which we increment the spawnCount since we only change it on the component at ecb playback 
 
-                for (int i = 0; i < spawnCount; i++)
+                for (int i = 0; i < spawner.SpawnMax; i++)
                 {
-                    SpawnCube(spawner, i);
+                    SpawnCube(spawner, i, entity, ref tempSpawner);
                 }
-                allCubesSpawned = true;
             }
             else
             {
-                //// Spawn a cube at every spawn time until the spawn count is reached
-                if (CubeCount >= spawner.SpawnCount)
-                {
-                    allCubesSpawned = true;
-                }
-                else
-                {
-                    ProcessSpawner(spawner);
-                }
+                // Spawn a cube at every spawn time until the spawn max is reached
+                ProcessSpawner(spawner, entity);
             }
-
-            // Disable the entity instead of disabling the system because otherwise I need to complete the job inside the system and can't pass the job hadnle to the system
-            if (allCubesSpawned) Ecb.SetEnabled(entity, false);
         }
 
-        private void SpawnCube(Spawner spawner, int index)
+        private void SpawnCube(Spawner spawner, int index, Entity spawnerEntity, ref Spawner tempSpawner)
         {
             // Instantiate new entity
             Entity newEntity = Ecb.Instantiate(spawner.Prefab);
+
+            // Set the SpawnCount
+            tempSpawner.SpawnCount++;
+            Ecb.SetComponent<Spawner>(spawnerEntity, tempSpawner); // I set the spawn count in the ecb because the entity isn't actually spawned until the ECB playback
 
             Random random = Random.CreateFromIndex((uint)((ElapsedTime / DeltaTime) + index));
 
@@ -155,18 +167,21 @@ namespace ECS.ECSExperiments
             Ecb.AddComponent<AddComponentTag>(newEntity);
         }
 
-        private void ProcessSpawner(Spawner spawner)
+        private void ProcessSpawner(Spawner spawner, Entity spawnerEntity)
         {
             // Instantiate new entity
             Entity newEntity = Ecb.Instantiate(spawner.Prefab);
+
+            // Reset next spawn time and increment SpawnCount
+            Spawner newSpawner = spawner;
+            newSpawner.NextSpawnTime = (float)ElapsedTime + spawner.SpawnRate;
+            newSpawner.SpawnCount++;
+            Ecb.SetComponent<Spawner>(spawnerEntity, newSpawner); // I set the spawn count in the ecb because the entity isn't actually spawned until the ECB playback
 
             Random random = Random.CreateFromIndex((uint)(ElapsedTime / DeltaTime));
 
             // Set entity spawn position
             Ecb.SetComponent(newEntity, LocalTransform.FromPosition(spawner.SpawnPosition + random.NextFloat3(-10, 10)));
-
-            // Reset next spawn time
-            spawner.NextSpawnTime = (float)ElapsedTime + spawner.SpawnRate;
 
             // Set random speed, timer and move direction value
             SetCubeRandomValues(newEntity, random);
@@ -193,43 +208,43 @@ namespace ECS.ECSExperiments
         [ReadOnly] public double ElapsedTime;
         [ReadOnly] public float DeltaTime;
         [ReadOnly] public int CubeCount;
+        [ReadOnly] public int MaxSpawnLimit;
         public EntityCommandBuffer.ParallelWriter Ecb;
 
         public void Execute(Entity entity, [ChunkIndexInQuery] int chunkIndexInQuery, ref Spawner spawner)
         {
-            bool allCubesSpawned = false;
+            // We need to check this early because of ECB playback delay (we need to be sure the spawn count wasn't changed between this update and the previous) 
+            if (spawner.SpawnCount >= spawner.SpawnMax)
+            {
+                Ecb.SetEnabled(chunkIndexInQuery, entity, false);
+                return;
+            }
+
             if (spawner.SpawnAllAtFirstFrame)
             {
-                // Each Spawner spawns its spawnCount of Cube then disable itself
-                int spawnCount = spawner.SpawnCount;
+                // Each Spawner spawns its spawnMax of Cube then disable itself
+                Spawner tempSpawner = spawner; // We need a temporary struct on which we increment the spawnCount since we only change it on the component at ecb playback 
 
-                for (int i = 0; i < spawnCount; i++)
+                for (int i = 0; i < spawner.SpawnMax; i++)
                 {
-                    SpawnCube(spawner, i, chunkIndexInQuery);
+                    SpawnCube(spawner, i, chunkIndexInQuery, entity, ref tempSpawner);
                 }
-                allCubesSpawned = true;
             }
             else
             {
-                //// Spawn a cube at every spawn time until the spawn count is reached
-                if (CubeCount >= spawner.SpawnCount)
-                {
-                    allCubesSpawned = true;
-                }
-                else
-                {
-                    ProcessSpawner(spawner, chunkIndexInQuery);
-                }
+                // Spawn a cube at every spawn time until the spawn count is reached
+                ProcessSpawner(spawner, chunkIndexInQuery, entity);
             }
-
-            // Disable the entity instead of disabling the system because otherwise I need to complete the job inside the system and can't pass the job hadnle to the system
-            if (allCubesSpawned) Ecb.SetEnabled(chunkIndexInQuery, entity, false);
         }
 
-        private void SpawnCube(Spawner spawner, int index, int chunkIndexInQuery)
+        private void SpawnCube(Spawner spawner, int index, int chunkIndexInQuery, Entity spawnerEntity, ref Spawner tempSpawner)
         {
             // Instantiate new entity
             Entity newEntity = Ecb.Instantiate(chunkIndexInQuery, spawner.Prefab);
+
+            // Set the SpawnCount
+            tempSpawner.SpawnCount++;
+            Ecb.SetComponent<Spawner>(chunkIndexInQuery, spawnerEntity, tempSpawner); // I set the spawn count in the ecb because the entity isn't actually spawned until the ECB playback
 
             Random random = Random.CreateFromIndex((uint)((ElapsedTime / DeltaTime) + index));
 
@@ -242,18 +257,21 @@ namespace ECS.ECSExperiments
             Ecb.AddComponent<AddComponentTag>(chunkIndexInQuery, newEntity);
         }
 
-        private void ProcessSpawner(Spawner spawner, int chunkIndexInQuery)
+        private void ProcessSpawner(Spawner spawner, int chunkIndexInQuery, Entity spawnerEntity)
         {
             // Instantiate new entity
             Entity newEntity = Ecb.Instantiate(chunkIndexInQuery, spawner.Prefab);
+
+            // Reset next spawn time and increment SpawnCount
+            Spawner newSpawner = spawner;
+            newSpawner.NextSpawnTime = (float)ElapsedTime + spawner.SpawnRate;
+            newSpawner.SpawnCount++;
+            Ecb.SetComponent<Spawner>(chunkIndexInQuery, spawnerEntity, newSpawner); // I set the spawn count in the ecb because the entity isn't actually spawned until the ECB playback
 
             Random random = Random.CreateFromIndex((uint)(ElapsedTime / DeltaTime));
 
             // Set entity spawn position
             Ecb.SetComponent(chunkIndexInQuery, newEntity, LocalTransform.FromPosition(spawner.SpawnPosition + random.NextFloat3(-10, 10)));
-
-            // Reset next spawn time
-            spawner.NextSpawnTime = (float)ElapsedTime + spawner.SpawnRate;
 
             // Set random speed, timer and move direction value
             SetCubeRandomValues(newEntity, random, chunkIndexInQuery);

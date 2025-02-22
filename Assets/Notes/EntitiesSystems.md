@@ -641,16 +641,50 @@ public partial struct MoveSystem : ISystem
 
 #### Singleton entity component
 
-Another solution is to use a singleton entity component. We can then access the data by getting the singleton (`SystemAPI.GetSingleton<T>()`).
+Another solution is to use a [singleton entity component](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/components-singleton.html). We can then access the data by getting the singleton (`SystemAPI.GetSingleton<T>()`).
 
 This main differences of this solution are:
 - A singleton can only have one instance per world.  
 - Singletons are not tied to the system lifetime.
 - Singletons can only exist per system type, not per system instance.
 
+A singleton is basically a component that only has one instance in a given world> To create it we either can use the `EntityManager` or we can bake an entity that will be the only entity to hold that component in the world.
+
+Here is an example where we create a singleton with the EntityManager in system and we access it in another system.
 
 ```C#
+public partial struct MySystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        // Since a singleton can only have one instance, I ensure it doesn't already exist before
+        if (SystemAPI.HasSingleton<ComponentA>() == false) 
+        {
+           ComponentA singletonComponent = new ComponentA { /* Set component default data */ };
+           state.EntityManager.CreateSingleton(singletonComponent, "MySingleton"); // the string is a debug friendly name associated with the singleton
+        }
+    }
 
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        // We can update the singleton here
+        ComponentA updatedSingleton = new ComponentA { /* Update component data */ };
+        SystemAPI.SetSingleton<ComponentA>(updatedSingleton); // Update the component itself
+    }
+}
+
+// Another System that access the singleton
+public partial struct AnotherSystem : ISystem
+{
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        // Get Singleton to do something with them
+        ComponentA singletonData = SystemAPI.GetSingleton<ComponentA>();
+    }
+}
 ```
 
 

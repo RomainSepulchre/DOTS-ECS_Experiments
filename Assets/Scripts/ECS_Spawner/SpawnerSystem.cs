@@ -73,7 +73,7 @@ namespace ECS.ECSExperiments
                 {
                     // Each Spawner spawns its spawnCount of Cube then disable itself
                     int spawnMax = spawner.ValueRO.SpawnMax;
-                    // Only for SpawnCubesAllallECB(), we need a temporary struct on which we increment the spawnCount since we only change it at ecb playback on the component
+                    // Only for SpawnCubesAllallECB(), we need a temporary struct on which we increment the spawnCount since we only change on the component it at ecb playback
                     //Spawner tempSpawner = SystemAPI.GetComponent<Spawner>(entity); 
 
                     for (int i = 0; i < spawnMax; i++)
