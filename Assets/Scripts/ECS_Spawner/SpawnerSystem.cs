@@ -61,32 +61,33 @@ namespace ECS.ECSExperiments
             EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
             foreach ( var (spawner, entity) in SystemAPI.Query<RefRW<Spawner>>().WithNone<SpawnerUseJobs>().WithEntityAccess())
             {
+                // We need to check this early because of ECB playback delay (we need to be sure the spawn count wasn't changed between this update and the previous) 
+                if (spawner.ValueRO.SpawnCount >= spawner.ValueRO.SpawnMax) // We reached this spawner limit
+                {
+                    ecb.SetEnabled(entity, false);
+                    continue;
+                }
+
                 bool spawnAllCubes = spawner.ValueRO.SpawnAllAtFirstFrame;
-                
                 if (spawnAllCubes)
                 {
                     // Each Spawner spawns its spawnCount of Cube then disable itself
                     int spawnMax = spawner.ValueRO.SpawnMax;
+                    // Only for SpawnCubesAllallECB(), we need a temporary struct on which we increment the spawnCount since we only change it at ecb playback on the component
+                    //Spawner tempSpawner = SystemAPI.GetComponent<Spawner>(entity); 
 
                     for (int i = 0; i < spawnMax; i++)
                     {
-                        //SpawnCubes(ref state, spawner, i);
-                        SpawnCubes(ref state, spawner, i, ecb);
-                        //SpawnCubesAllECB(ref state, spawner, i, ecb, entity);
+                        SpawnCubes(ref state, spawner, i);
+                        //SpawnCubes(ref state, spawner, i, ecb);
+                        //SpawnCubesAllECB(ref state, spawner, i, ecb, entity, ref tempSpawner);
                     }
                 }
                 else
                 {
-                    //ProcessSpawner(ref state, spawner);
-                    ProcessSpawner(ref state, spawner, ecb);
+                    ProcessSpawner(ref state, spawner);
+                    //ProcessSpawner(ref state, spawner, ecb);
                     //ProcessSpawnerAllECB(ref state, spawner, ecb, entity);
-                }
-
-                Debug.Log($"System {entity.Index}:{spawner.ValueRO.SpawnCount}/{spawner.ValueRO.SpawnMax}, MAX:{cubeQuery.CalculateEntityCount()}/{maxSpawnLimit}");
-
-                if (spawner.ValueRO.SpawnCount >= spawner.ValueRO.SpawnMax) // We reached this spawner limit
-                {
-                    ecb.AddComponent<Disabled>(entity);
                 }
             }
 
@@ -94,14 +95,13 @@ namespace ECS.ECSExperiments
             ecb.Dispose();
         }
 
-        // TODO: TEST THIS WITH SPAWN COUNT CHANGE
         private void ProcessSpawner(ref SystemState state, RefRW<Spawner> spawner)
         {
             if (spawner.ValueRO.NextSpawnTime < SystemAPI.Time.ElapsedTime)
             {
                 // Instantiate new entity
                 Entity newEntity = state.EntityManager.Instantiate(spawner.ValueRO.Prefab);
-                spawner.ValueRW.SpawnCount++;
+                spawner.ValueRW.SpawnCount++;               
 
                 Random random = Random.CreateFromIndex((uint)(SystemAPI.Time.ElapsedTime / SystemAPI.Time.DeltaTime));
 
@@ -123,7 +123,6 @@ namespace ECS.ECSExperiments
                 // Instantiate new entity
                 Entity newEntity = state.EntityManager.Instantiate(spawner.ValueRO.Prefab);
                 spawner.ValueRW.SpawnCount++;
-                Debug.Log($"{spawner.ValueRO.SpawnCount} spawned");
 
                 Random random = Random.CreateFromIndex((uint)(SystemAPI.Time.ElapsedTime / SystemAPI.Time.DeltaTime));
 
@@ -139,7 +138,6 @@ namespace ECS.ECSExperiments
             }
         }
 
-        // TODO: TEST THIS WITH SPAWN COUNT CHANGE
         private void ProcessSpawnerAllECB(ref SystemState state, RefRW<Spawner> spawner, EntityCommandBuffer ecb, Entity spawnerEntity)
         {
             if (spawner.ValueRO.NextSpawnTime < SystemAPI.Time.ElapsedTime)
@@ -165,7 +163,6 @@ namespace ECS.ECSExperiments
             }
         }
 
-        // TODO: TEST THIS WITH SPAWN COUNT CHANGE
         private void SpawnCubes(ref SystemState state, RefRW<Spawner> spawner, int index)
         {
             // Instantiate new entity
@@ -188,7 +185,6 @@ namespace ECS.ECSExperiments
             Entity newEntity = state.EntityManager.Instantiate(spawner.ValueRO.Prefab);
 
             spawner.ValueRW.SpawnCount++;
-            Debug.Log($"{spawner.ValueRO.SpawnCount} spawned");
 
             Random random = Random.CreateFromIndex((uint)((SystemAPI.Time.ElapsedTime / SystemAPI.Time.DeltaTime) + index));
 
@@ -201,16 +197,14 @@ namespace ECS.ECSExperiments
             ecb.AddComponent<AddComponentTag>(newEntity);
         }
 
-        // TODO: TEST THIS WITH SPAWN COUNT CHANGE
-        private void SpawnCubesAllECB(ref SystemState state, RefRW<Spawner> spawner, int index, EntityCommandBuffer ecb, Entity spawnerEntity)
+        private void SpawnCubesAllECB(ref SystemState state, RefRW<Spawner> spawner, int index, EntityCommandBuffer ecb, Entity spawnerEntity, ref Spawner tempSpawner)
         {
             // Instantiate new entity
             Entity newEntity = ecb.Instantiate(spawner.ValueRO.Prefab);
 
             // I get the spawner component from the entity to avoid copying all the value one by one from RefRW<Spawner>
-            Spawner newSpawner = SystemAPI.GetComponent<Spawner>(spawnerEntity);
-            newSpawner.SpawnCount++ ;
-            ecb.SetComponent<Spawner>(spawnerEntity, newSpawner); // I set the spawn count in the ecb because the entity isn't actually spawned until the ECB playback
+            tempSpawner.SpawnCount++ ;
+            ecb.SetComponent<Spawner>(spawnerEntity, tempSpawner); // I set the spawn count in the ecb because the entity isn't actually spawned until the ECB playback
 
             Random random = Random.CreateFromIndex((uint)((SystemAPI.Time.ElapsedTime / SystemAPI.Time.DeltaTime) + index));
 

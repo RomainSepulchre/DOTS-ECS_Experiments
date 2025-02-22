@@ -136,7 +136,7 @@ namespace ECS.ECSExperiments
             }
 
             // Disable the entity instead of disabling the system because otherwise I need to complete the job inside the system and can't pass the job hadnle to the system
-            if (allCubesSpawned) Ecb.AddComponent<Disabled>(entity);
+            if (allCubesSpawned) Ecb.SetEnabled(entity, false);
         }
 
         private void SpawnCube(Spawner spawner, int index)
@@ -223,7 +223,7 @@ namespace ECS.ECSExperiments
             }
 
             // Disable the entity instead of disabling the system because otherwise I need to complete the job inside the system and can't pass the job hadnle to the system
-            if (allCubesSpawned) Ecb.AddComponent<Disabled>(chunkIndexInQuery, entity);
+            if (allCubesSpawned) Ecb.SetEnabled(chunkIndexInQuery, entity, false);
         }
 
         private void SpawnCube(Spawner spawner, int index, int chunkIndexInQuery)
