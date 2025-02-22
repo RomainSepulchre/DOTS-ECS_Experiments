@@ -21,6 +21,7 @@ namespace ECS.ECSExperiments
     // ! Passing an EntityQuery to an EntityManager method is the most efficient way to make structural changes. This is because the method can operate on whole chunks rather than individual entities.
     // ! The added overhead of using an EntityCommandBuffer might be worth it to avoid introducing a new sync point.
 
+    // TODO: ADD SPAWN COUNT CHANGE + SPAWN MANAGER TOTAL COUNT
     public partial struct SpawnerWithJobsSystem : ISystem
     {
         EntityQuery spawnerQuery;
@@ -39,6 +40,13 @@ namespace ECS.ECSExperiments
 
             // Require there is at least one spawner that match the query to run the update
             state.RequireForUpdate(spawnerQuery);
+
+            // ? This can't be mixed with a singleton backed in the hierarchy, this happens before the end of the baking
+            //if (SystemAPI.HasSingleton<SpawnersManager>() == false) // Create the singleton a default value if doesn't exist
+            //{
+            //    SpawnersManager spawnsManager = new SpawnersManager { MaximumSpawnCount = 9999 };
+            //    state.EntityManager.CreateSingleton(spawnsManager, "SpawnerManagerSingleton");
+            //}
         }
 
         [BurstCompile]

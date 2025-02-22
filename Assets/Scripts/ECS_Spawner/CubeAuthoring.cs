@@ -17,7 +17,7 @@ namespace ECS.ECSExperiments
     {
         public override void Bake(CubeAuthoring authoring)
         {
-            var entity = GetEntity(TransformUsageFlags.None);
+            var entity = GetEntity(TransformUsageFlags.Dynamic);
 
             Cube newCube = new Cube()
             {

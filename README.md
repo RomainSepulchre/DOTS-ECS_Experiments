@@ -23,6 +23,7 @@
     - [Time in world and system](Assets/Notes/EntitiesSystems.md#time-in-worlds-and-systems)
     - [SystemAPI](Assets/Notes/EntitiesSystems.md#systemapi)
     - [Iterate over components in Systems](Assets/Notes/EntitiesSystems.md#iterate-over-components-in-systems)
+    - [Store data in systems](Assets/Notes/EntitiesSystems.md#store-data-in-systems)
 - [Jobs with ECS](Assets/Notes/JobsWithECS.md)
     - [Entities Job interfaces (IJobChunk, IJobEntity)](Assets/Notes/JobsWithECS.md#entities-job-interfaces)
     - [Synchronization points (sync points)](Assets/Notes/JobsWithECS.md#synchronization-points-sync-points)

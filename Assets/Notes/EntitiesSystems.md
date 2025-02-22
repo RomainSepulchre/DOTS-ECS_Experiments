@@ -10,6 +10,7 @@ Summary:
 - [Time in world and system](#time-in-worlds-and-systems)
 - [SystemAPI](#systemapi)
 - [Iterate over components in Systems](#iterate-over-components-in-systems)
+- [Store data in systems](#store-data-in-systems)
 
 Resources links:
 - [EntityComponentSystemSamples github repository](https://github.com/Unity-Technologies/EntityComponentSystemSamples/tree/master?tab=readme-ov-file)
@@ -560,5 +561,97 @@ For more information on `Entities.Foreach` check:
 If for any we need to manage chunks in a way that is not supported by any of the solutiuon before, its possible to manually request all the archetype chunks in a native array and pass it to a custom `IJobParallelFor`.
 
 [Check the unity documentation for more info on this](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/iterating-manually.html).
+
+## Store data in systems
+
+The best way to [organize and store system data](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/systems-data.html) is to store them in a component rather than adding public fields within the system type.
+
+### Never store system data in public fields
+
+**Using public data on systems is a very bad pratice** because we need a direct reference or pointer to the system instance to access them and it has consequences:
+
+- It create dependencies between systems, which conflict with data-oriented approches.
+- There is no guarantee for thread or lifetime safety while accessing the system instance.
+- There is no guarantee for thread or lifetime safety while accessing the system's data, even when the system still exist and is accesed in a thread safe manner.
+
+To prevent us to do this, the `world` methods that allows us to get or create a system (such as `GetExistingSystem<T>`) doesn't return us a direct reference or pointer to the instance of the system, it returns a `SystemHandle`. A `SystemHandle` is an identifier representing a system instance in a particular world.
+
+### Store data in component associated to the system
+
+**The system's data that need to be publicly accessible should be stored in components**. To do that we have two solutions:
+
+#### System-associated entity component
+
+The main solution is to put the components in a system-associated entity by creating a component on a `SystemHandle` instead of an `entity`. We can then access the data by getting the component from our `SystemHandle` (`SystemAPI.GetComponent<T>(SystemHandle)`).
+
+The main advantage of this is that **the data lifetime is tied to the system lifetime**.
+
+```C#
+// A system that store input data
+public partial struct InputSystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        // Add a component on the system to hold the input data
+        state.EntityManager.AddComponent<InputData>(state.SystemHandle);
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        // Update the component data
+        InputData updatedInputData = new InputData
+        {
+            UpKeyPressed = Input.GetKey(KeyCode.UpArrow),
+            DownKeyPressed = Input.GetKey(KeyCode.DownArrow),
+            LeftKeyPressed = Input.GetKey(KeyCode.LeftArrow),
+            RightKeyPressed = Input.GetKey(KeyCode.RightArrow),
+        };
+        SystemAPI.SetComponent<InputData>(state.SystemHandle, updatedInputData);
+    }
+
+    // Most of component data is automatically destroyed when the system is destroyed, the main exception is Native Containers.
+    // If a Native Container existed in the component, we must ensure the memory is disposed (usually, OnDestroy is the best place for this)
+    public void OnDestroy(ref SystemState state)
+    { 
+    }
+}
+
+// Another system that use the input system data
+[UpdateAfter(typeof(InputSystem))] // Make sure the data have been updated
+public partial struct MoveSystem : ISystem
+{
+    SystemHandle inputSystemHandle;
+
+    public void OnCreate(ref SystemState state)
+    {
+        inputSystemHandle = state.World.GetExistingSystem<InputSystem>(); // Not compatible with burst compile
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        InputData currentInputData = SystemAPI.GetComponent<InputData>(inputSystemHandle);
+
+        // ... do something with the input data
+    }
+}
+```
+
+#### Singleton entity component
+
+Another solution is to use a singleton entity component. We can then access the data by getting the singleton (`SystemAPI.GetSingleton<T>()`).
+
+This main differences of this solution are:
+- A singleton can only have one instance per world.  
+- Singletons are not tied to the system lifetime.
+- Singletons can only exist per system type, not per system instance.
+
+
+```C#
+
+```
+
 
 

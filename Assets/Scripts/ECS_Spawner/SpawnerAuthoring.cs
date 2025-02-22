@@ -7,7 +7,7 @@ namespace ECS.ECSExperiments
     {
         public GameObject Prefab;
         public float SpawnRate;
-        public int SpawnCount;
+        public int SpawnMax;
         public bool SpawnAllAtFirstFrame;
         public bool UseJobs;
     }
@@ -24,7 +24,8 @@ namespace ECS.ECSExperiments
                 SpawnPosition = authoring.transform.position,
                 NextSpawnTime = 0.0f,
                 SpawnRate = authoring.SpawnRate,
-                SpawnCount = authoring.SpawnCount,
+                SpawnCount = 0,
+                SpawnMax = authoring.SpawnMax,
                 SpawnAllAtFirstFrame = authoring.SpawnAllAtFirstFrame
             };
 

@@ -165,7 +165,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &47044462
@@ -214,7 +214,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &88353034
@@ -263,7 +263,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &97929772
@@ -312,9 +312,131 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
+--- !u!1 &109776719
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 109776723}
+  - component: {fileID: 109776722}
+  - component: {fileID: 109776721}
+  - component: {fileID: 109776720}
+  - component: {fileID: 109776724}
+  m_Layer: 0
+  m_Name: MovableSphere
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!135 &109776720
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 109776719}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.5
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!23 &109776721
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 109776719}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: e9bd4596e7288a34492c280e9c2ae310, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &109776722
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 109776719}
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!4 &109776723
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 109776719}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &109776724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 109776719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 803e742038978404980db721000619c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speed: 5
 --- !u!1 &111880168
 GameObject:
   m_ObjectHideFlags: 0
@@ -361,7 +483,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &119531132
@@ -410,7 +532,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &120237562
@@ -459,7 +581,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &136949287
@@ -508,7 +630,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &181501075
@@ -557,7 +679,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &209670298
@@ -606,7 +728,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &213024641
@@ -655,7 +777,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &217769232
@@ -704,7 +826,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &223932772
@@ -753,7 +875,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &245676424
@@ -802,7 +924,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &259997416
@@ -851,7 +973,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &279638644
@@ -900,7 +1022,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &311023929
@@ -949,7 +1071,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &345259848
@@ -998,7 +1120,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &349733978
@@ -1047,7 +1169,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &359018623
@@ -1096,7 +1218,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &394978793
@@ -1145,7 +1267,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &407999963
@@ -1194,7 +1316,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &414401144
@@ -1243,7 +1365,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &421457832
@@ -1292,7 +1414,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &448214206
@@ -1341,7 +1463,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &461802053
@@ -1390,7 +1512,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &479155314
@@ -1439,7 +1561,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &497045670
@@ -1488,7 +1610,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &506291481
@@ -1537,7 +1659,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &509043742
@@ -1586,7 +1708,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &637827502
@@ -1635,7 +1757,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &644847481
@@ -1684,7 +1806,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &666464678
@@ -1733,7 +1855,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &674420305
@@ -1782,7 +1904,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &709043074
@@ -1831,7 +1953,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &710516814
@@ -1880,7 +2002,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &715846674
@@ -1929,7 +2051,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &721628406
@@ -1978,7 +2100,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &730471349
@@ -2027,7 +2149,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &742285638
@@ -2076,7 +2198,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &752255798
@@ -2125,7 +2247,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &780883441
@@ -2174,7 +2296,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &788073535
@@ -2223,7 +2345,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &817006216
@@ -2272,7 +2394,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &834341252
@@ -2306,8 +2428,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 0.1
-  SpawnCount: 10000
-  SpawnAllAtFirstFrame: 0
+  SpawnMax: 500
+  SpawnAllAtFirstFrame: 1
   UseJobs: 0
 --- !u!4 &834341254
 Transform:
@@ -2370,7 +2492,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &878919253
@@ -2419,7 +2541,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &904092247
@@ -2468,7 +2590,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &908608382
@@ -2517,7 +2639,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &934351489
@@ -2566,7 +2688,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &968535854
@@ -2615,7 +2737,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &973976792
@@ -2664,7 +2786,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &979148932
@@ -2713,7 +2835,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1011958292
@@ -2762,7 +2884,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1013297906
@@ -2811,7 +2933,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1076148363
@@ -2860,7 +2982,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1106156905
@@ -2909,7 +3031,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1130294472
@@ -2958,7 +3080,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1139056961
@@ -3007,7 +3129,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1142839427
@@ -3056,7 +3178,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1155502594
@@ -3196,7 +3318,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1202440633
@@ -3245,7 +3367,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1204721819
@@ -3294,7 +3416,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1213422780
@@ -3343,7 +3465,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1216546760
@@ -3392,7 +3514,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1223376618
@@ -3441,7 +3563,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1224288727
@@ -3490,7 +3612,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1230581688
@@ -3539,7 +3661,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1235352874
@@ -3588,7 +3710,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1259758645
@@ -3637,7 +3759,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1274585916
@@ -3686,7 +3808,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1278435528
@@ -3735,7 +3857,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1278438868
@@ -3784,7 +3906,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1292561692
@@ -3924,9 +4046,54 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
+--- !u!1 &1317828424
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1317828426}
+  - component: {fileID: 1317828425}
+  m_Layer: 0
+  m_Name: SpawnersManagerSingleton
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1317828425
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1317828424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc6ddf926ba424648a4dd058724f2a11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maximumSpawnCount: 758962
+--- !u!4 &1317828426
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1317828424}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1323127855
 GameObject:
   m_ObjectHideFlags: 0
@@ -3973,7 +4140,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1323448792
@@ -4022,7 +4189,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1330426744
@@ -4071,7 +4238,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1354268910
@@ -4120,7 +4287,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1363100992
@@ -4169,7 +4336,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1406779463
@@ -4218,7 +4385,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1417067472
@@ -4267,7 +4434,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1422784132
@@ -4316,7 +4483,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1431886373
@@ -4365,7 +4532,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1433317855
@@ -4414,7 +4581,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1437406280
@@ -4463,7 +4630,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1455677639
@@ -4512,7 +4679,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1457584438
@@ -4561,7 +4728,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1483952332
@@ -4610,7 +4777,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1499238583
@@ -4659,7 +4826,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1504795849
@@ -4708,7 +4875,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1520148977
@@ -4757,7 +4924,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1522436005
@@ -4806,7 +4973,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1534446573
@@ -4855,7 +5022,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1540382995
@@ -4904,7 +5071,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1543538684
@@ -4953,7 +5120,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1545513367
@@ -5002,7 +5169,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1573955998
@@ -5051,7 +5218,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1581705096
@@ -5100,7 +5267,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1602632779
@@ -5149,7 +5316,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1624911148
@@ -5198,7 +5365,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1633781403
@@ -5247,7 +5414,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1636423780
@@ -5296,7 +5463,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1646766975
@@ -5386,7 +5553,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1675328182
@@ -5435,7 +5602,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1694782226
@@ -5484,7 +5651,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1695947827
@@ -5533,7 +5700,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1702990554
@@ -5582,7 +5749,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1718700950
@@ -5631,7 +5798,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1725171447
@@ -5680,7 +5847,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1751587258
@@ -5729,7 +5896,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1790600332
@@ -5778,7 +5945,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1793083670
@@ -5827,7 +5994,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1795425737
@@ -5876,7 +6043,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1837373666
@@ -5925,7 +6092,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1857757895
@@ -5974,7 +6141,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1865762970
@@ -6023,7 +6190,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1910422884
@@ -6072,7 +6239,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1919991931
@@ -6121,7 +6288,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1921093914
@@ -6155,7 +6322,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 0.1
-  SpawnCount: 10000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!4 &1921093916
@@ -6219,7 +6386,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1954129742
@@ -6268,7 +6435,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1959705663
@@ -6317,7 +6484,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1961380993
@@ -6366,7 +6533,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1973590478
@@ -6415,7 +6582,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1984602820
@@ -6464,7 +6631,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &1985968098
@@ -6513,7 +6680,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &1991307239
@@ -6562,7 +6729,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &2013331133
@@ -6611,7 +6778,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &2030517023
@@ -6660,7 +6827,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &2037513833
@@ -6709,7 +6876,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &2047191958
@@ -6758,7 +6925,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &2054998910
@@ -6848,7 +7015,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &2075560698
@@ -6897,7 +7064,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &2080417078
@@ -6946,7 +7113,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &2089786044
@@ -6995,7 +7162,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &2096802210
@@ -7044,7 +7211,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &2097668341
@@ -7093,7 +7260,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &2109119686
@@ -7142,7 +7309,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &2114188068
@@ -7191,7 +7358,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &2120850803
@@ -7240,7 +7407,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1 &2124852061
@@ -7289,7 +7456,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!1 &2124887987
@@ -7338,7 +7505,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
   SpawnRate: 1
-  SpawnCount: 100000
+  SpawnMax: 0
   SpawnAllAtFirstFrame: 0
   UseJobs: 1
 --- !u!1660057539 &9223372036854775807
@@ -7351,3 +7518,5 @@ SceneRoots:
   - {fileID: 1646766976}
   - {fileID: 1292561693}
   - {fileID: 1155502595}
+  - {fileID: 109776723}
+  - {fileID: 1317828426}
