@@ -1,4 +1,4 @@
-[Back to summary...](../../)
+[Back to summary...](../)
 
 # Notes on things non-related to DOTS and ECS
 

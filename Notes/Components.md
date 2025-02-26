@@ -1,4 +1,4 @@
-[Back to summary...](../../)
+[Back to summary...](../)
 
 # Components
 
