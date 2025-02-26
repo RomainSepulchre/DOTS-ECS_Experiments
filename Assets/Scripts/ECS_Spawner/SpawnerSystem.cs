@@ -78,15 +78,17 @@ namespace ECS.ECSExperiments
 
                     for (int i = 0; i < spawnMax; i++)
                     {
-                        SpawnCubes(ref state, spawner, i);
-                        //SpawnCubes(ref state, spawner, i, ecb);
+                        //SpawnCubes(ref state, spawner, i);
+                        SpawnCubes(ref state, spawner, i, ecb);
                         //SpawnCubesAllECB(ref state, spawner, i, ecb, entity, ref tempSpawner);
                     }
                 }
                 else
                 {
-                    ProcessSpawner(ref state, spawner);
-                    //ProcessSpawner(ref state, spawner, ecb);
+                    //TODO: Two at the same pos at first frame ?
+
+                    //ProcessSpawner(ref state, spawner);
+                    ProcessSpawner(ref state, spawner, ecb);
                     //ProcessSpawnerAllECB(ref state, spawner, ecb, entity);
                 }
             }

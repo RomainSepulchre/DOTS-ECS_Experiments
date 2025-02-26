@@ -7,7 +7,7 @@ namespace ECS.ECSExperiments
 {
     // Entities and component: https://www.youtube.com/watch?v=jzCEzNoztzM
 
-    public struct Cube : IComponentData
+    public struct Cube : IComponentData, IEnableableComponent
     {
         public float3 MoveDirection;
         public float MoveSpeed;

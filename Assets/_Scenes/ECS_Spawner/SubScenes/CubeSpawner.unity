@@ -2427,8 +2427,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Prefab: {fileID: 5887158670299169185, guid: 647592f75ed492a46a95545f94b4fe35, type: 3}
-  SpawnRate: 0.01
-  SpawnMax: 10000
+  SpawnRate: 0.1
+  SpawnMax: 10
   SpawnAllAtFirstFrame: 0
   UseJobs: 0
 --- !u!4 &834341254
