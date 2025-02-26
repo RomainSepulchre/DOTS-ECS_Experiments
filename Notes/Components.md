@@ -104,6 +104,57 @@ The `EntityManager` has key methods for dynamic buffers:
 - **`Insert()`:** Inserts an element at a specified index, resizing if necessary.
 - **`RemoveAt()`:** Removes the element at a specified index.
 
+### Enableable Components
+
+An [enableable components]() is a component that can be enabled or disabled at runtime without any structural change. When we query enableable components, only the components that are enabled are returned by the query so we only do the work on the entity where the component is enabled. Since there is no strutural change, this also means we can enable or disable components on jobs running on worker threads without using an entity command buffer or creating a sync point.
+
+Enableable components only can be used on `IComponentData` and `IBufferElementData`. To make them eneable, we just need to make them inherits from `IEnableableComponent`.
+
+```C#
+public struct MyEnableableComponent : IComponentData, IEnableableComponent
+{
+    // ... component data
+}
+
+public struct MyEnableableBuffer : IBufferElementData, IEnableableComponent
+{
+    // ... buffer data
+}
+```
+
+#### When to use enableable components ?
+
+Enableable components **should be used to avoid structural changes** or to **replace a set of tag components to represent states** (it reduce the number of unique entity archetypes and reduce memory consumption witha better chunk usage).
+
+Enableable components are perfect for **when we need to change the state of a component often and unpredictably** or **when the number of state permutations are high on a frame-by-frame basis**.
+
+However, if we expect the state will change at a low frequency or if it will persist for many frames it's better to add/remove components.
+
+> ! To prevent a race conditions, jobs with write access to an enableable component might block main-thread operation until the job complete even if the job doesn't enable/disable the component on any entities.
+
+#### How to work with enableable components ?
+
+`EntityManager`, `ComponentLookup<T>`, `EntityCommandBuffer` and `ArchetypeChunk` all have specific method for enableable components:
+
+- `IsComponentEnabled<T>(Entity e)`:
+    - return *true* if entity has the component and it is enabled.
+    - return *false* if entity has the component and it is disabled.
+    - Asserts if the entity doesn't have the component or if the component doesn't implement `IEnableableComponent`.
+- `SetComponentEnabled<T>(Entity e, bool enable)`:
+    - if the entity has the component it is enabled/disabled based on *enable* bool.
+    - Asserts if the entity doesn't have the component or if the component doesn't implement `IEnableableComponent`.
+
+> `ComponentLookup<T>.SetComponentEnabled<T>(Entity e, bool enable)` can be used to safely enable/disable entities from worker thread since no structural change will happen but the job need to have a write access to component *T*. Avoid enable/disable a component on an entity that might be processed by a job on another thread to prevent generating a race condition.
+
+#### Query enableable components
+
+**A query requiring for a component *T* will consider an entity with a *T* component disabled as if it doesn't have the component** and the entity won't match the query. All `EntityQuery` methods automatically handle enableable components this way. For example, `query.CalculateEntityCount()` calculate the number of entity that match the query so entity with disabled component won't be taken into account.
+
+There is 2 exceptions to that:
+- **Methods that end with *IgnoreFilter* or *WithoutFilter* treat all components as if they are enabled**. These are generally more efficient than their filtering equivalent and won't require a sync point.
+- **Queries created with `EntityQueryOptions.IgnoreComponentEnabledState` ignore the state(enabled/disabled)** of enableable components when determining if the entity match the query.
+
+
 ## Transform Components and Systems
 
 > ***Complete with more note based on the doc, this is not completely clear yet for me and maybe move directly in its own .md file***
