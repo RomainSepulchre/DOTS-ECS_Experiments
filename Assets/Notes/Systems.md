@@ -1,6 +1,6 @@
 [Back to summary...](../../)
 
-# Entities system
+# Systems
 
 Summary:
 

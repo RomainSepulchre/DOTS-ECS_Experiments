@@ -1,6 +1,6 @@
 [Back to summary...](../../)
 
-# Unity Entities
+# ECS Concepts
 
 Summary:
 
