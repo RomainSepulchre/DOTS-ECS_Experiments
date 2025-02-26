@@ -311,7 +311,7 @@ To get the correct dependencies through differents systems we can get a `JobHand
 - For `SystemBase` systems: `this.Dependency` 
 - For `ISystem` systems: `state.Dependency` from the `SystemState` passed as methods argument.
 
-The following Dependency sections [have more detailed explanation here](EntitiesSystems.md#why-is-it-important-to-keep-components-accessed-in-a-system-registered-)
+The following Dependency sections [have more detailed explanation here](Systems.md#why-is-it-important-to-keep-components-accessed-in-a-system-registered-)
 
 #### Dependency changes before a system updates
 
