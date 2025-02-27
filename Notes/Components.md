@@ -122,6 +122,47 @@ public struct MyEnableableBuffer : IBufferElementData, IEnableableComponent
 }
 ```
 
+### Singleton components
+
+A singleton component is basically a component that only has one instance in a given world. To create it we either can use the `EntityManager` or we can bake an entity that will be the only entity to hold that component in the world.
+
+Here is an example where we create a singleton with the EntityManager in system and we access it in another system.
+
+```C#
+public partial struct MySystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        // Since a singleton can only have one instance, I ensure it doesn't already exist before
+        if (SystemAPI.HasSingleton<ComponentA>() == false) 
+        {
+           ComponentA singletonComponent = new ComponentA { /* Set component default data */ };
+           state.EntityManager.CreateSingleton(singletonComponent, "MySingleton"); // the string is a debug friendly name associated with the singleton
+        }
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        // We can update the singleton here
+        ComponentA updatedSingleton = new ComponentA { /* Update component data */ };
+        SystemAPI.SetSingleton<ComponentA>(updatedSingleton); // Update the component itself
+    }
+}
+
+// Another System that access the singleton
+public partial struct AnotherSystem : ISystem
+{
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        // Get Singleton to do something with them
+        ComponentA singletonData = SystemAPI.GetSingleton<ComponentA>();
+    }
+}
+```
+
 #### When to use enableable components ?
 
 Enableable components **should be used to avoid structural changes** or to **replace a set of tag components to represent states** (it reduce the number of unique entity archetypes and reduce memory consumption witha better chunk usage).

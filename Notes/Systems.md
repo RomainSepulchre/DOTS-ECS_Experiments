@@ -11,6 +11,7 @@ Summary:
 - [SystemAPI](#systemapi)
 - [Iterate over components in Systems](#iterate-over-components-in-systems)
 - [Store data in systems](#store-data-in-systems)
+- [Optimize structural changes](#optimize-structural-changes)
 
 Resources links:
 - [EntityComponentSystemSamples github repository](https://github.com/Unity-Technologies/EntityComponentSystemSamples/tree/master?tab=readme-ov-file)
@@ -648,44 +649,61 @@ This main differences of this solution are:
 - Singletons are not tied to the system lifetime.
 - Singletons can only exist per system type, not per system instance.
 
-A singleton is basically a component that only has one instance in a given world> To create it we either can use the `EntityManager` or we can bake an entity that will be the only entity to hold that component in the world.
+For more info [see the notes on Singleton components](Components.md#singleton-components)
 
-Here is an example where we create a singleton with the EntityManager in system and we access it in another system.
+## Optimize structural changes
 
-```C#
-public partial struct MySystem : ISystem
-{
-    [BurstCompile]
-    public void OnCreate(ref SystemState state)
-    {
-        // Since a singleton can only have one instance, I ensure it doesn't already exist before
-        if (SystemAPI.HasSingleton<ComponentA>() == false) 
-        {
-           ComponentA singletonComponent = new ComponentA { /* Set component default data */ };
-           state.EntityManager.CreateSingleton(singletonComponent, "MySingleton"); // the string is a debug friendly name associated with the singleton
-        }
-    }
+### Comparison of the different structural changes approach
 
-    [BurstCompile]
-    public void OnUpdate(ref SystemState state)
-    {
-        // We can update the singleton here
-        ComponentA updatedSingleton = new ComponentA { /* Update component data */ };
-        SystemAPI.SetSingleton<ComponentA>(updatedSingleton); // Update the component itself
-    }
-}
+The following table compares different approaches to structural changes, and the time in milliseconds that it takes to add one component to one million entities with each approach:
 
-// Another System that access the singleton
-public partial struct AnotherSystem : ISystem
-{
-    [BurstCompile]
-    public void OnUpdate(ref SystemState state)
-    {
-        // Get Singleton to do something with them
-        ComponentA singletonData = SystemAPI.GetSingleton<ComponentA>();
-    }
-}
+| Method | Description | Time in ms |
+| :---: | ----- | :---: |
+| **EntityManager and query with enableable components** | Don't add any components, and enable a component that implements `IEnableable`, which was previously disabled. For more information, refer to Enableable components | 0.03 |
+| **EntityManager and query** | Pass an `EntityQuery` to the `EntityManager` with `AddComponent` to immediately add components in bulk on the main thread. | 3.5 |
+| **EntityManager and NativeArray** | Pass a `NativeArray<Entity>` to the `EntityManager` to immediately add components on the main thread | 35 |
+| **Entity command buffer and playback query** | Pass an `EntityQuery` to an `EntityCommandBuffer` on the main thread to queue components to add using the `EntityQueryCaptureMode.AtPlayback` flag. Then execute that entity command buffer (time includes the entity command buffer execution time). For more information, refer to Entity command buffers.| 3.5 |
+| **Entity command buffer and NativeArray** | Pass a `NativeArray<Entity>` to an `EntityCommandBuffer` on the main thread to queue components to add, then execute that entity command buffer (time includes the entity command buffer execution time).| 35 |
+| **Entity command buffer and job system with `IJobChunk`** | Use an `IJobChunkacross` multiple worker threads to pass a `NativeArray` per chunk to an `EntityCommandBuffer`, then execute that entity command buffer (time includes the entity command buffer execution time). | 17 |
+| **Entity command buffer and job system with `IJobEntity`** | Use an `IJobEntity` across multiple worker threads to pass instructions to add components to entities one at a time to an `EntityCommandBuffer`, then execute that entity command buffer (time includes the entity command buffer execution time)| 170 |
+
+### Tips for structural changes optimization
+
+#### Optimize Native Array for chunks:
+
+When building a `NativeArray` of entities to apply structural change, match the entity order in the array with their order in memory. The simplest way to do this is with an `IJobChunk`, it iterate over the entities in a chunk in order and can build a NativeArray of entities that need to have the structural change. The NativeArray can then be passed to an `EntityCommandBuffer.ParallelWriter` to queue up the required changes. Accessing the entities in order increase the chance of CPU cache hits.
+
+#### Entity command buffers and entity queries:
+
+With `EntityQuery` passed to an `EntityManager` method, the entities not processed one by one but at a chunk level. However, when we use an `EntityQuery` with an `EntityCommandBuffer`, the query content could be affected by other structural changes between the times it's recorded in the ECB and the time it's playback.
+
+To avoid that and processing entities one by one, we can use [`EntityQueryCaptureMode.AtPlayback`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.EntityQueryCaptureMode.html) to store the query and evaluate it when the buffer is executed.
+
+#### Enable/Disable systems to avoid structural change:
+
+To prevent a specific system to process the entities that match its `EntityQuery`, we can disable the system with `SystemState.Enabled` so we don't have to remove a component required from the entities.
+
+Another good way to do this use a specific component on an entity to signal if the system should be enabled or disabled. Then, we can use `RequireForUpdate()` to tell what component is needed and the system only update when the component exist. By doing that we only have to add/remove one component instead of dozens.
+
+#### Avoid adding one component at a time when creating a new entity:
+
+Every time we call `AddComponent()`, a new archetype is created and the entity move to a whole new chunk. This archetype exist for the rest of the application runtime even if it's never needed anymore which contribute to performance overhead when an `EntityQuery` calculate which archetypes it references.
+
+Creating the archetype that describe the entity we want and use this archetype to create the entity allow us to skip unnecessary archetype and chunk creation.
+
+```c#
+// Create one entity with a specific archetype
+var newEntityArchetype = state.EntityManager.CreateArchetype(typeof(ComponentA), typeof(ComponentB), typeof(ComponentC)); // We can cache the archetype if we intend to use it again later    
+var entity = EntityManager.CreateEntity(newEntityArchetype);
+
+// If we need to create lots of entity with the same archetype
+var entities = new NativeArray<Entity>(10000, Allocator.Temp);  
+state.EntityManager.CreateEntity(newEntityArchetype, entities);
 ```
+
+#### Use ComponentTypeSet to add/remove more than one component:
+
+Instead of adding or removing component one by one we can use a [`ComponentTypeSet`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.ComponentTypeSet.html). A `ComponentTypeSet` is a struct holding several components, it can be passed to `EntityManager` methods and replace the Component parameter (ex: `AddComponent(Entity, ComponentTypeSet)`, `RemoveComponent(Entity, ComponentTypeSet)`).
 
 
 

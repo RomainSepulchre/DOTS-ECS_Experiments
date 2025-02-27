@@ -24,6 +24,7 @@
     - [SystemAPI](Notes/Systems.md#systemapi)
     - [Iterate over components in Systems](Notes/Systems.md#iterate-over-components-in-systems)
     - [Store data in systems](Notes/Systems.md#store-data-in-systems)
+    - [Optimize structural changes](Notes/Systems.md#optimize-structural-changes)
 - [Components](Notes/Components.md)
     - [What is a component ?](Notes/Components.md#what-is-a-component-)
     - [Types of components](Notes/Components.md#types-of-components)

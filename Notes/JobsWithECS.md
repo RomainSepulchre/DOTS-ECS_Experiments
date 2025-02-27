@@ -582,3 +582,4 @@ If one of these situations applies, avoid using the job system by using an idiom
 ### Configure job worker count
 
 The number of worker used by the application can be configured by setting `JobUtility.JobWorkerCount`. The number of worker thread used must enough to perform the work required without introducing CPU bottlenecks and less than introducing thread spending a lot of time idle. Use the profiler to test the change.
+
