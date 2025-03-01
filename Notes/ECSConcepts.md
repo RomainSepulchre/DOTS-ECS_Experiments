@@ -13,6 +13,7 @@ Summary:
 - [Query](#query)
 - [Access entity and components with jobs](#access-entity-and-components-with-jobs)
 - [Baking](#baking)
+- [Aspects](#aspects)
 
 Resources links:
 - [EntityComponentSystemSamples github repository](https://github.com/Unity-Technologies/EntityComponentSystemSamples/tree/master?tab=readme-ov-file)
@@ -132,4 +133,48 @@ To add entities in a scene we create a subscene. One entity is created for each 
 The result of the baking is serialized in a entity scene file which is loaded at runtime when the main scene is loaded.
 
 >Baked entities can be further processed by a baking system before being serialized for more advanced use cases.
+
+## Aspects
+
+An aspects is an object that allows to define a subset of entity components. It is useful to simplify queries and component related code: including an aspect in a query is the same as including all the components that are declared in the aspect.
+
+An aspect is defined as a readonly partial struct that implement the interface `IAspect`.
+
+```C#
+readonly partial struct MyAspect : IAspect
+{
+    // The field that compose the aspect
+    RefRW<ComponentA> componentA;
+    EnabledRefRW<ComponentB> componentB;
+
+    // A field can be optionnal if it is declared with [Optional] attribute
+    [Optional] RefRO<ComponentC> componentC;
+
+    // To declare DynamicBuffer or nested aspect as read-only we can use the [ReadOnly] attribute
+    [ReadOnly] DynamicBuffer<ComponentD> bufferD;
+}
+```
+
+Only some specific types are allowed in a `IAspect` struct:
+
+- `Entity` (an entity)
+- `RefRw<T>`, `RefRO<T>` (a reference to component of type *T*)
+- `EnabledRefRW<T>`, `EnabledRefRO<T>` (a reference to the enabled state of a component of type *T*)
+- `DynamicBuffer<T>` (a dynamic buffer component of type *T*)
+- `ISharedComponent` (an access to shared component value as read only)
+- Another aspect (all the field contained in the aspect will be part of the parent aspect)
+
+The `SystemAPI` and `EntityManager` provide methods to create instance of an aspect:
+- `SystemAPI.GetAspectRW<T>()`
+- `SystemAPI.GetAspectRO<T>(`
+- `EntityManager.GetAspect<T>()`
+- `EntityManager.GetAspectRO<T>()`
+
+> Generally, it's recommended to use `SystemAPI` methods over `EntityManager` methods (`SystemAPI` register the underlying components types of the aspect with the system which allow to keep  track of the dependencies needed when scheduling a job.
+
+An aspect instance is also accessible in an `IJobEntity` or a `SystemAPI.Query()` loop.
+
+> Unity provide predefined aspects for groups of related components.
+
+
 
