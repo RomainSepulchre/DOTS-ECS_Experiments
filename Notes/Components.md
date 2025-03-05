@@ -104,6 +104,137 @@ The `EntityManager` has key methods for dynamic buffers:
 - **`Insert()`:** Inserts an element at a specified index, resizing if necessary.
 - **`RemoveAt()`:** Removes the element at a specified index.
 
+### Managed Components
+
+The advantage of managed components is they can store properties of any types even managed types, however it comes with downsides:
+
+- They are resource intensive to store and access, they are not stored directly in chunk like unmanaged components (see note below).
+- They can't be accessed in jobs
+- They can't be burst-compiled
+- They require garbage collection
+- A property using a managed type might need to manually add the ability to clone, compare and serialize the property
+
+**Due to the heavy cost they incur, managed component should only be used when really needed.**
+
+> *Note:* Managed component aren't stored in chunks directly, unity store them directly in one big array for the whole world and store their index in this array in the chunk. This means when we access a managed component Unity does an extra index lookup which makes managed components less optimal than unmanged components.
+
+To declare a managed component, we declare a class that implement the `IComponentData`. It must either not have a contructor or have a parameterless constructor.
+
+```c#
+public class ManagedComponent : IComponentData
+{
+    public int Value
+}
+```
+
+#### Managing lifecycle of managed components external resources
+
+When managed components reference external resources, it's a best pratice to implement `ICloneable` and `IDisposable`.
+
+For example with managed component that reference a `ParticleSystem`, by default duplicating a managed component entity will create 2 managed components that both reference the same `ParticleSystem` and when destroying the managed component the `ParticleSystem` will not be destroyed. Implementing `ICloneable` allow to duplicate the particle system for the second managed component and implementing `IDisposable` allow to destroy the `ParticleSystem` when the component is destroyed.
+
+```c#
+public class ManagedComponentWithExternalResource : IComponentData, ICloneable, IDisposable
+{
+    public ParticleSystem ParticleSys;
+
+    // Method from ICloneable interface
+    public object Clone()
+    {
+        // Code to clone particle system
+        return new ManagedComponentWithExternalResource
+        {
+            ParticleSys = UnityEngine.Object.Instantiate(ParticleSys)
+        };
+
+    }
+
+    // Method from IDisposable interface
+    public void Dispose()
+    {
+        // Code to destroy particle system
+        UnityEngine.Object.Destroy(ParticleSys);
+
+    }
+}
+```
+
+### Shared Components
+
+> *** TODO: I need to test this to better understand how to use it***
+
+A shared component group the entities in chunks based on the value of the component they share. For example with a *ComponentA* that has a int value, all *componentA* where the value is 1 will be in the same chunk, all *componentA* where the value is 2 will be in the same chunk, and so on. This means that changing the value of a shared component value is a structural changes since it will move entities in a new chunk that correspond to the new value.
+
+> Each world store the shared component value in arrays separated from the ECS chunks, the chunks only store their indexes into these array so every unique shared component value is only stored once in a world.
+
+**The major utility of shared component is to filter entities that share a specific component value when doing a query**. For example, we can query for all *ComponentA* and filter to keep only the entities where *ComponentA* has a *x* value.
+
+It's possible to create both managed and unmanaged shared components but managed shared components keep all the disadvantages of regular managed components.
+
+Implement the `ISharedComponentData` interface to create a shared component:
+
+```c#
+// An unmanaged shared component
+public struct MySharedComponent : ISharedComponentData
+{
+    public int Value;
+}
+
+// A managed shared component
+// Still a struct (not a class like regular managed component), as soon as it hold any managed type the share component is treated as unmanaged
+// We need to also implement IEquatable<T> to ensure comparison will not generate managed allocations unnecessarily
+public struct MyManagedSharedComponent : ISharedComponentData, IEquatable<MyManagedSharedComponent>
+{
+    public string Value; // a managed type
+
+    public bool Equals(MyManagedSharedComponent other)
+    {
+        return Value.Equals(other.Value);
+    }
+
+    public override int GetHashCode()
+    {
+        return Value.GetHashCode();
+    }
+}
+```
+
+> It's possible to change how ECS compares instances of a shared component by implementing `IEquatable<T>` *T* being a shared component type. The `Equals()` and `GetHashCode()` methods added by the interface can be burst-compiled with the `[BurstCompile]` attribute as long as the component is unmanaged.
+
+#### Use EntityManager with shared components
+
+`EntityManager` has key methods that can be used with shared components:
+
+- `AddComponent<T>()`: add *T* component, *T* can be a shared component
+- `RemoveComponent<T>()`: remove *T* component, *T* can be a shared component
+- `HasComponent<T>()`: return a bool to tell if the entity has *T* component, *T* can be a shared component
+- `AddSharedComponent()`: add an unmanaged shared component to an entity and sets its initial value
+- `AddSharedComponentManaged()`: add a managed shared component to an entity and sets its initial value.
+- `GetSharedComponent<T>()`: retrieves the value of an entity's unmanaged shared *T* component.
+- `SetSharedComponent<T>()`: overwrite the value of an entity's unmanaged shared *T* component.
+- `GetSharedComponentManaged<T>()`: retrieves the value of an entity's managed shared *T* component.
+- `SetSharedComponentManaged<T>()`: overwrite the value of an entity's managed shared *T* component.
+
+> **Using Entities API to change a shared component value is mandatory**, especially when it include referenced objects. When the shared component contains a reference type or a pointer never modify directly the referenced object without using Entities API.
+
+#### Optimize Shared Component
+
+**Share shared components accross world**:  
+Managed object that are resource intensive (such as [blob assets]()) can use shared component to store one copy of the object accross every worlds. To do that, implement [`IRefCounted`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.IRefCounted.html) interface and it's `Retain()` and `Release()` methods to manage the lifetime of the underlying resource. When the component is unmanaged, we can use the `[BurstCompile]` attribute to improve performance.
+
+**Use unmanaged shared components**:  
+Use unmanaged shared components when you can and only use managed shared components when there is no other choice. Unmanaged shared components are stored in a place that is accessible to burst-compiled code which provide performance benefit when using the unmanaged shared component API (ex: [`SetUnmanagedSharedComponentData`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.EntityManager.SetUnmanagedSharedComponentData.html)).
+
+**Avoid frequent update**:  
+Updating a shared component value is a structural change so it should not be done frequently.
+
+**Avoid lots of unique shared component values**:  
+When we have lots of unique shared component values, we create chunk fragmentation: all entities in a chunk must share the same shared components values, so having a lot of unique shared component values means entities are fragmented over lots of chunks that are almost empty.    
+> Chunks fragmentation means we waste the space in each chunks and we have to loop accross a high number of chunks to loop through all entities which negates the benefit of ECS chunk layout and reduce performance.
+
+**Be careful with archetypes having multiple shared components**:  
+All entities in an archetype chunk must have the same combination of shared component value, so archetypes with multiple shared component types might cause fragmentation.
+
 ### Enableable Components
 
 An [enableable components]() is a component that can be enabled or disabled at runtime without any structural change. When we query enableable components, only the components that are enabled are returned by the query so we only do the work on the entity where the component is enabled. Since there is no strutural change, this also means we can enable or disable components on jobs running on worker threads without using an entity command buffer or creating a sync point.
