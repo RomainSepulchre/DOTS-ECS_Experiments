@@ -253,6 +253,38 @@ public struct MyEnableableBuffer : IBufferElementData, IEnableableComponent
 }
 ```
 
+#### When to use enableable components ?
+
+Enableable components **should be used to avoid structural changes** or to **replace a set of tag components to represent states** (it reduce the number of unique entity archetypes and reduce memory consumption witha better chunk usage).
+
+Enableable components are perfect for **when we need to change the state of a component often and unpredictably** or **when the number of state permutations are high on a frame-by-frame basis**.
+
+However, if we expect the state will change at a low frequency or if it will persist for many frames it's better to add/remove components.
+
+> ! To prevent a race conditions, jobs with write access to an enableable component might block main-thread operation until the job complete even if the job doesn't enable/disable the component on any entities.
+
+#### How to work with enableable components ?
+
+`EntityManager`, `ComponentLookup<T>`, `EntityCommandBuffer` and `ArchetypeChunk` all have specific method for enableable components:
+
+- `IsComponentEnabled<T>(Entity e)`:
+    - return *true* if entity has the component and it is enabled.
+    - return *false* if entity has the component and it is disabled.
+    - Asserts if the entity doesn't have the component or if the component doesn't implement `IEnableableComponent`.
+- `SetComponentEnabled<T>(Entity e, bool enable)`:
+    - if the entity has the component it is enabled/disabled based on *enable* bool.
+    - Asserts if the entity doesn't have the component or if the component doesn't implement `IEnableableComponent`.
+
+> `ComponentLookup<T>.SetComponentEnabled<T>(Entity e, bool enable)` can be used to safely enable/disable entities from worker thread since no structural change will happen but the job need to have a write access to component *T*. Avoid enable/disable a component on an entity that might be processed by a job on another thread to prevent generating a race condition.
+
+#### Query enableable components
+
+**A query requiring for a component *T* will consider an entity with a *T* component disabled as if it doesn't have the component** and the entity won't match the query. All `EntityQuery` methods automatically handle enableable components this way. For example, `query.CalculateEntityCount()` calculate the number of entity that match the query so entity with disabled component won't be taken into account.
+
+There is 2 exceptions to that:
+- **Methods that end with *IgnoreFilter* or *WithoutFilter* treat all components as if they are enabled**. These are generally more efficient than their filtering equivalent and won't require a sync point.
+- **Queries created with `EntityQueryOptions.IgnoreComponentEnabledState` ignore the state(enabled/disabled)** of enableable components when determining if the entity match the query.
+
 ### Singleton components
 
 A singleton component is basically a component that only has one instance in a given world. To create it we either can use the `EntityManager` or we can bake an entity that will be the only entity to hold that component in the world.
@@ -294,37 +326,73 @@ public partial struct AnotherSystem : ISystem
 }
 ```
 
-#### When to use enableable components ?
+### Cleanup component
 
-Enableable components **should be used to avoid structural changes** or to **replace a set of tag components to represent states** (it reduce the number of unique entity archetypes and reduce memory consumption witha better chunk usage).
+Cleanup component are like regular component, the difference is how they behave when we try to destroy an entity. When you destroy an entity that contains a cleanup component, instead of destroying the entity and its component the regular component are destroyed but the entity still exist with its cleanup components until we remove all its cleanup components. Another specificity of cleanup components is that when the entity it belong to is copied to another world, copied in serialization, or copied by the `Instantiate` method of EntityManager, the cleanup components are not copied to the new entity.
 
-Enableable components are perfect for **when we need to change the state of a component often and unpredictably** or **when the number of state permutations are high on a frame-by-frame basis**.
+> A consequence of the cleanup component not being copied with an entity is that cleanup component added at baking time will not be serialized.
 
-However, if we expect the state will change at a low frequency or if it will persist for many frames it's better to add/remove components.
+The primary use case for cleanup components is to help initialize an entity after it's creation and cleanup them after their destruction:
+- For initialization, we can easily find entities that have a specific component but still doesn't have an adequate cleanup component to initialize them and then add the cleanup component.
+- For destruction cleanup, we can easily find entities that still have the cleanup component but don't have a specific component anymore to do cleanup and then removing the cleanup component.
 
-> ! To prevent a race conditions, jobs with write access to an enableable component might block main-thread operation until the job complete even if the job doesn't enable/disable the component on any entities.
+To declare a cleanup component there are different possibilities depending on what we want to do with it:
+- Unmanaged cleanup component: struct implementing `ICleanupComponentData`
+- Managed cleanup component: class implementing `ICleanupComponentData`
+- Dynamic buffer cleanup component: struct implementing `ICleanupBufferElementData`
+- Shared cleanup component: struct implementing `ICleanupSharedComponentData`
 
-#### How to work with enableable components ?
+```C#
+// An unmanaged cleanup component
+public struct MyCleanupComponent : ICleanupComponentData
+{
+    // Component data
+}
 
-`EntityManager`, `ComponentLookup<T>`, `EntityCommandBuffer` and `ArchetypeChunk` all have specific method for enableable components:
+// A managed cleanup component
+public class MyManagedCleanupComponent : ICleanupComponentData
+{
+    // Component data
+}
 
-- `IsComponentEnabled<T>(Entity e)`:
-    - return *true* if entity has the component and it is enabled.
-    - return *false* if entity has the component and it is disabled.
-    - Asserts if the entity doesn't have the component or if the component doesn't implement `IEnableableComponent`.
-- `SetComponentEnabled<T>(Entity e, bool enable)`:
-    - if the entity has the component it is enabled/disabled based on *enable* bool.
-    - Asserts if the entity doesn't have the component or if the component doesn't implement `IEnableableComponent`.
+// A dynamic buffer cleanup component
+public struct MyBufferCleanupComponent : ICleanupBufferElementData
+{
+    // Component data
+}
 
-> `ComponentLookup<T>.SetComponentEnabled<T>(Entity e, bool enable)` can be used to safely enable/disable entities from worker thread since no structural change will happen but the job need to have a write access to component *T*. Avoid enable/disable a component on an entity that might be processed by a job on another thread to prevent generating a race condition.
+// A shared cleanup component
+public struct MySharedCleanupComponent : ICleanupSharedComponentData
+{
+    // Component data
+}
+```
 
-#### Query enableable components
+#### Lifecycle of cleanup component
 
-**A query requiring for a component *T* will consider an entity with a *T* component disabled as if it doesn't have the component** and the entity won't match the query. All `EntityQuery` methods automatically handle enableable components this way. For example, `query.CalculateEntityCount()` calculate the number of entity that match the query so entity with disabled component won't be taken into account.
+1. We create an entity that contains a cleanup component or add a cleanup component to an existing entity.
+2. When we don't need the entity anymore, we destroy the entity but only non-cleanable component are destroyed and the entity still exist since there is a cleanup component on the entity.
+3. We do our cleanup and we remove the cleanup component, the entity is destroyed automatically when we remove the cleanup component.
 
-There is 2 exceptions to that:
-- **Methods that end with *IgnoreFilter* or *WithoutFilter* treat all components as if they are enabled**. These are generally more efficient than their filtering equivalent and won't require a sync point.
-- **Queries created with `EntityQueryOptions.IgnoreComponentEnabledState` ignore the state(enabled/disabled)** of enableable components when determining if the entity match the query.
+```c#
+// Creates an entity that contains a cleanup component.
+Entity e = EntityManager.CreateEntity(typeof(ComponentA), typeof(ComponentB), typeof(MyCleanupComp));
+
+// Destroy the entity but because the entity has a cleanup component only non-cleanable component are removed, Unity doesn't actually destroy the entity.
+EntityManager.DestroyEntity(e);
+
+// If we check, the entity still exists.
+bool entityExists = EntityManager.Exists(e); // return true
+
+// ... Do the cleanup on the entity
+
+// Remove the cleanup component and the entity is automatically destroyed.
+EntityManager.RemoveComponent(e, new ComponentTypeSet(typeof(ExampleCleanup), typeof(Translation)));
+
+// If we check, the entity no longer exists.
+entityExists = EntityManager.Exists(e); // return false
+```
+
 
 
 ## Transform Components and Systems
