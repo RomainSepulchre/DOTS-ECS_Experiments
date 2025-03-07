@@ -115,7 +115,7 @@ A request to efficiently find all entities with a specific set of component type
 
 Archetypes matching a query are cached until a new archetypes is added to the world. Since the number of existing archetypes in world should stabilize early in the program lifetime, caching usually helps to make queries much faster.
 
-More information on how to use query in [iterating over entities section in the systems notes](Systems.md#iterate-over-components-in-systems).
+More information on how to use query in [iterating over entities section in the systems notes](Queries.md).
 
 ## Access entity and components with jobs
 
