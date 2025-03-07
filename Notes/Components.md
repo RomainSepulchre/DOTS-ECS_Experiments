@@ -393,7 +393,79 @@ EntityManager.RemoveComponent(e, new ComponentTypeSet(typeof(ExampleCleanup), ty
 entityExists = EntityManager.Exists(e); // return false
 ```
 
+### Chunk component
 
+A chunk component is a component that store value per chunk instead of per entity. It is similar to shared component since they both store one value per chunk but contrary to the shared component, the chunk component doesn't belong to entities, it belong to chunks. Unlike shared component, chunk components are stored directly in the chunk which means setting a chunk component isn't a structural change.
+
+The main goal of chunk component is for optimization since it allows to run code at a per-chunk level to check if we need to do something with the entities it contains.
+
+> Chunk components are always unmanaged, it's not possible to create managed chunk components.
+
+A chunk is declared just like a regular unmanaged component, the difference is on how we add the component on an entity:
+
+```c#
+// A chunk component is declared like a regular unmanaged component
+public struct MyChunkComponent : IComponentData
+{
+    // Some component data
+}
+
+//... In a system, we call a specific EntityManager method to add the component as a chunk component
+EntityManager.AddChunkComponentData<MyChunkComponent>(entity); // This is a strutural change, the entity is moved to the  new chunk that hold our chunk component
+```
+
+**When we call `AddChunkComponentData<T>()` on an entity, the chunk component is not added to the chunk the entity belong to. A new  chunk that has our chunk component is created and the entity is moved to this new chunk** or if an archetype already exist with this chunk component, the entity is directly moved in a chunk in this archetype. **This is why adding or removing a chunk component is a  strutural changes that trigger a sync point.**
+
+> Newly created chunk component are created with default values.
+
+#### Use chunk component
+
+`EntityManager` provide a set of methods to work with chunk components:
+
+- `AddChunkComponentData<T>(entity||entityQuery)`: Add a chunk component of type *T* to the specified `Entity` or to chunks identified by an `EntityQuery` *(strutural change)*.
+- `RemoveChunkComponent<T>(entity)`: Remove a chunk component of type *T* from the specified `Entity` *(strutural change)*.
+- `RemoveChunkComponentData<T>(entityQuery)`: Remove a chunk component of type *T* from chunks identified by an `EntityQuery` *(strutural change)*.
+- `HasChunkComponent<T>(entity)`: Check if the chunk containing the `Entity` has a chunk component of type *T*.
+- `GetChunkComponentData<T>(entity||archetypeChunk)`: Get a chunk component of type *T* on chunk the `Entity` we specified belong to or on the chunk specified with `ArchetypeChunk`.
+- `SetChunkComponentData<T>(archetypeChunk)`: Set the value of chunk component of type *T* on the chunk specified with `ArchetypeChunk`.
+
+> ***It's seems that before it was possible to set a chunk component from an entity but it no longer seems to work?***
+
+For a more concrete example [check Unity documentation on chunk components](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/components-chunk-use.html).
+
+**Use chunk component with jobs**  
+Since jobs can't use `EntityManager`, to access a chunk component in a job we need to use a `ComponentTypeHandle` that we pass as a job argument.
+
+```c#
+struct MyJob : IJobChunk
+{
+    public ComponentTypeHandle<MyChunkComponent> MyChunkComponentHandle;
+
+    public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+    {
+        // Get chunk component
+        MyChunkComponent myChunkComponent = chunk.GetChunkComponentData(MyChunkComponentHandle);
+
+        // Set chunk component
+        chunk.SetChunkComponentData(MyChunkComponentHandle, new MyChunkComponent { /* new component data */} );
+    }
+}
+```
+
+#### Query with chunk components
+
+```c#
+// ... in a system
+// Using systemState
+// -> We need to precise the component is a chunk component instead if using a simple typeof()
+state.GetEntityQuery(ComponentType.ChunkComponent<MyChunkComponent>());
+
+// Using SystemAPI
+// -> There is variant of WithAll(), WithNone(), etc for chunk components
+SystemAPI.QueryBuilder().WithAllChunkComponent<MyChunkComponent>().Build();
+```
+
+> When we define a query for chunk component, [`ComponentType`](https://docs.unity3d.com/Packages/com.unity.entities@1.0/api/Unity.Entities.ComponentType.html) give several options like `ComponentType.ChunkComponentReadOnly<T>()` when we only want to read the chunk component.
 
 ## Transform Components and Systems
 

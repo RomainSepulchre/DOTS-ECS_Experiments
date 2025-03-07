@@ -557,6 +557,86 @@ For more information on `Entities.Foreach` check:
 - [Filtering data](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/iterating-entities-foreach-filtering.html)
 - [Use entity command buffers in Entities.ForEach](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/iterating-entities-foreach-ecb.html)
 
+### Filtering queries
+
+When we do a query it's possible to further sort entities by using a filter to exclude entities from the queries. There is 3 main types of filters:
+- **Shared component filter**: filter the entities based on a shared component value
+- **Change filter**: filter the entities based on wether the value of a specific component has changed.
+- **Enableable components**: filter the entities based on the enableable component status. By default it's always the case, a query only considerer an entity has an enableable component if it is enabled.
+
+**When we set a filter on a query it remain active until we call `ResetFilter()` on it.**
+
+> To ignore filtering `EntityQuery` methods usually have a variant that end with `IgnoreFilter` or `WithoutFilter` variant that ignore filter including the enableable component filter used by default. These methods are generally more efficient than their equivalent with filtering.
+
+#### Shared component filter
+
+To use the shared component filter, the targeted shared component must be included in the query. Once the query is ready we call its `SetSharedComponentFilter()` method and pass a struct of the same shared component with the value to select. It's possible to add up to two different shared components to filter.
+
+```c#
+struct MySharedComponent : ISharedComponentData // A shared component for the example
+{
+    public int Group;
+}
+
+public partial struct MySystem : ISystem
+{
+    EntityQuery query;
+
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        // Create the query and include the shared component in it
+        query =  SystemAPI.QueryBuilder().WithAllRW<LocalTransform>().WithAll<MySharedComponent>().Build();
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        query.ResetFilter(); // Reset filter in case filters where already applied to the query
+
+        // Set the shared component filter, pass a MySharedComponent with the value we want to select
+        query.SetSharedComponentFilter(new MySharedComponent {Group = 1} );
+
+        // Now only entity where MySharedComponent.Group is equal to 1 will be returned by the query
+        //  For example, if we calulate the query count, only entity where MySharedComponent.Group is equal to 1 are counted
+        int filteredCount = query.CalculateEntityCount();
+
+        // We can still get the count without the filter using WithoutFilter/Ignorefilter methods or if we reset the filter and calculate the count again
+        int nonFilteredCount = query.CalculateEntityCountWithoutFiltering();
+    }
+}
+```
+
+> The filter can be changed at any time but the existing arrays of entities created from the query with `ToComponentDataArray()` or `ToEntityArray()` are not retroactively changed, they must be recreated.
+
+#### Change filter
+
+When we only need to update entities if a component value has been changed, we can use the change filter. The change filter checks wether a system that has declared a write access to the component has already run this frame, if it's the case the filter consider the component has been changed and archetype chunk with this component will be included in the query. *This is one of the reason why it important to only declare as read-write a component that really need to be modified*.
+
+Like with the shared component filter, the targeted component must be included in the query. Then, we can call the query `SetChangedVersionFilter()` method and pass the type of the component we want to check for value changes.
+
+```c#
+public partial struct MySystem : ISystem
+{
+    EntityQuery query;
+
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        // Create the query and include the shared component in it
+        query =  SystemAPI.QueryBuilder().WithAllRW<LocalTransform>().WithAll<ComponentA>().Build();
+
+        // Set the change filter, pass the type of component we want  to check for value changes
+        query.SetChangedVersionFilter(typeof(ComponentA));
+    }
+```
+
+> For efficiency the change filter is applied to whole archetype chunk and not to individual entities.
+
+#### Enableable component filter
+
+[See Query enableable components in Enableable component notes](Components.md#query-enableable-components).
+
 ### Manually iterate other data
 
 If for any we need to manage chunks in a way that is not supported by any of the solutiuon before, its possible to manually request all the archetype chunks in a native array and pass it to a custom `IJobParallelFor`.
