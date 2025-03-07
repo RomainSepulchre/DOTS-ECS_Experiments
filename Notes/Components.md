@@ -7,6 +7,7 @@ Summary:
 - [What is a component ?](#what-is-a-component-)
 - [Types of components](#types-of-components)
 - [Transform Components and Systems](#transform-components-and-systems)
+- [Aspects](#aspects)
 
 Resources links:
 - [EntityComponentSystemSamples github repository](https://github.com/Unity-Technologies/EntityComponentSystemSamples/tree/master?tab=readme-ov-file)
@@ -505,3 +506,84 @@ We can read from the `Child` and `PreviousParent` components but we should not m
 Every frame a system called `LocalToWorldSystem` computes each entity world space transform from the `LocalTransform` of the entity and its ancestors and then assign it to the entity `LocalToWorld` component.
 
 > Entity.Graphics systems read `LocalToWorld` but it doesn't read any other transform components. It is the only component an entity needs to be rendered.
+
+## Aspects
+
+An aspects is an object that allows to define a subset of entity components. It is useful to simplify queries and component related code: including an aspect in a query is the same as including all the components that are declared in the aspect. An aspect instance is also accessible in an `IJobEntity` or a `SystemAPI.Query()` loop.
+
+An aspect is defined as a readonly partial struct that implement the interface `IAspect`.
+
+```C#
+readonly partial struct MyAspect : IAspect
+{
+    // The field that compose the aspect, since the struct is readonly they must also be declared as readonly
+    public readonly RefRW<ComponentA> componentA;
+    public readonly EnabledRefRW<ComponentB> componentB;
+
+    // A field can be optionnal if it is declared with [Optional] attribute
+    [Optional] public readonly RefRO<ComponentC> componentC;
+
+    // To declare DynamicBuffer or nested aspect as read-only we can use the [ReadOnly] attribute
+    [ReadOnly] public readonly DynamicBuffer<ComponentD> bufferD;
+
+    // It's a good practice to declare private field and use public properties to access them
+    // This is mainly for readability to prevent long chains when accessing a value (ex: aspect.AnotherAspect.ComponentA.ValueRW.myValue)
+    readonly RefRW<LocalTransform> Transform;
+    public float3 Position
+    {
+        get => Transform.ValueRO.Position;
+        set => Transform.ValueRW.Position = value;
+    }
+}
+```
+
+> Unity also provide predefined aspects for groups of related components.
+
+### Allowed type in an aspect
+
+Only some specific types are allowed in a `IAspect` struct:
+
+- `Entity` (an entity)
+- `RefRw<T>`, `RefRO<T>` (a reference to component of type *T*)
+- `EnabledRefRW<T>`, `EnabledRefRO<T>` (a reference to the enabled state of a component of type *T*)
+- `DynamicBuffer<T>` (a dynamic buffer component of type *T*)
+- `ISharedComponent` (an access to shared component value as read only)
+- Another aspect (all the field contained in the aspect will be part of the parent aspect)
+
+### Create and use the instance of an aspect
+
+The `SystemAPI` and `EntityManager` provide methods to create instance of an aspect:
+- `SystemAPI.GetAspect<T>(Entity)`
+- `EntityManager.GetAspect<T>(Entity)`
+
+```C#
+// This will throw if the entity is missing any required component of the aspect
+MyAspect asp = SystemAPI.GetAspect<MyAspect>(myEntity);
+
+// Access components declared in the aspect
+int value = asp.componentA.ValueRO.aValue
+```
+
+> Generally, it's recommended to use `SystemAPI` methods over `EntityManager` methods (`SystemAPI` register the underlying components types of the aspect with the system which allow to keep  track of the dependencies needed when scheduling a job).
+
+It's also possible to pass an aspect in a `System.Query()` foreach loop or in an `IJobEntity` job. In the latter case or when we want to reference an aspect in code, we need to use the `in` and `ref` keyword. `in` will make all the field from the aspect read-only and `ref` will respect the read-only and read-write access defined in the aspect.
+
+```c#
+// In a SystamAPI.Query foreach
+foreach (var cannonball in SystemAPI.Query<CannonBallAspect>())
+{
+    // use cannonball aspect here
+}
+```
+
+```C#
+// In an IJobEntity
+[BurstCompile]
+partial struct MyJob : IJobEntity
+{
+    void Execute(ref MyAspect myAspect)
+    {
+        // Do work on the components that compose the aspect
+    }
+}
+```

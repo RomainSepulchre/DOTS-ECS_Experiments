@@ -376,3 +376,54 @@ Here is a list of useful version number:
 If for any we need to manage chunks in a way that is not supported by any of the solutiuon before, its possible to manually request all the archetype chunks in a native array and pass it to a custom `IJobParallelFor`.
 
 [Check the unity documentation for more info on this](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/iterating-manually.html).
+
+## Lookup arbitrary data
+
+The most efficient way to access and change data will always be through an entity query and a job but sometimes we might need to arbitrary access a component of an entity. It's possible to lookup an entity's `IComponentData` and `IBufferElementData` data but way to do it depends on where we do it (in `Entities.ForEach`, in a `IJobChunk` or in the main thread).
+
+### Arbitrary lookup with on main thread and with Entities.ForEach
+
+On the main thread and with `Entities.ForEach`, we can simply use `SystemAPI` to access a component or a dynamic buffer on an entity.
+
+```C#
+// Get a component of type ComponentA on entity 
+SystemAPI.GetComponent<ComponentA>(entity);
+
+// Get a dynamic buffer of type BufferA on entity 
+SystemAPI.GetBuffer<BufferA>(entity)
+```
+
+### Arbitrary lookup in jobs
+
+Since `SystemAPI` is not available in jobs, we need to use a `ComponentLookup` or a `BufferLookup` and pass them to the jobs to arbitrary access data on an entity.
+
+```c#
+// A job that need to arbitrary access a ComponentA and a BufferA on an entity
+public partial struct MyJob : IJobEntity
+{
+    // Always declare lookup with [ReadOnly] unless we need to write the component of buffer
+    [ReadOnly] public ComponentLookup<ComponentA> ComponentsA;
+    [ReadOnly] public BufferLookup<BufferA> BuffersA;
+
+    public void Execute(/* Execute parammeter...*/)
+    {
+        // Access data in the ComponentLookup and BufferLookup by using the entity
+        ComponentA compA = ComponentsA[entity];
+        BufferA bufA = BuffersA[entity];
+    }
+}
+
+//... the update method of a system that schedule the job
+protected override void OnUpdate()
+{
+    MyJob job = new MyJob
+    {
+        // Pass look to the job
+        ComponentsA = SystemAPI.GetComponentLookup<ComponentA>(true); // bool passed tell if the lookup will be readonly
+        BuffersA = SystemAPI.GetBufferLookup<BufferA>(true); // bool passed tell if the lookup will be readonly
+    }
+
+    // Schedule the job using Dependency property
+    Dependency = job.ScheduleParallel(query, this.Dependency);
+}
+```
