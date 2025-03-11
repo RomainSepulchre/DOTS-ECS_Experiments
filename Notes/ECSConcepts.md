@@ -136,6 +136,230 @@ The result of the baking is serialized in a entity scene file which is loaded at
 
 >Baked entities can be further processed by a baking system before being serialized for more advanced use cases.
 
+## Blob asset
+
+Blob stand for Binary Large Object, a [blob asset](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/blob-assets-concept.html) is an immutable, unmanaged piece of binary data stored in contiguous block of bytes.
+
+> The word asset in blob asset can be misleading, it doesn't means the blob points to a project asset file. A blob asset is only a piece of data in memory. However, that makes them easily serializable into files on disk.
+
+### Blob assets advantage and restrictions
+
+Blob assets are useful for several reasons:
+- They are efficient to copy and load because they are fully relocable (internal pointers are expressed as relative offsets so copying the blob is just like copying every byte).
+- They can be referenced from entity component although they are stored independently from entities.
+- Since they are immutable, they are inherently safe for multiple thread access.
+
+The efficiency of blob assets also comes with a few restrictions:
+- They can only contain unmanaged data (so no managed objects, strings or regular arrays).
+- They are readonly therefore they can't be changed at runtime.
+- To quickly load them, blob asset must only contains value type. It can't contain absolute references to itself and use internal pointers. In addition to standard value type, blob assets also comes with 3 specials data types: [`BlobArray`][blbarray], [`BlobPtr`][blbptr] and [`BlobString`][blbstring].
+
+[blbarray]: https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.BlobArray-1.html
+[blbptr]: https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.BlobPtr-1.html
+[blbstring]: https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.BlobString.html
+
+### Create a blob asset
+
+To create a blob asset we use [`BlobBuilder`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.BlobBuilder.html) type:
+
+1. We create a new `BlobBuilder`.
+2. We call `BlobBuilder.ConstructRoot()` to construct the root of the blob asset.
+3. We fill the blob root object with data.
+4. We use `BlobBuilder.CreateBlobAssetReference()` to create a `BlobAssetReference`. When we create the `BlobAssetReference`, the blob asset is copied to its final location.
+5. We need to dispose the `BlobBuilder`, once we are done.
+
+```c#
+// the data we want to put in the blob asset
+struct SomeDataForBlob
+{
+    public int ValueA;
+    public int ValueB;
+}
+
+// 1. We create a builder with temporary memory to build the blob asset
+BlobBuilder builder = new BlobBuilder(Allocator.Temp);
+
+// 2. We construct the root object for the blob asset, we use keyword ref
+ref SomeDataForBlob blobData = ref builder.ConstructRoot<SomeDataForBlob>();
+
+// 3. We fill the blob root object with data
+blobData.ValueA = 1;
+blobData.ValueB = 2;
+
+// 4. We create the blob asset reference to copy data from builder to it's final place, we use persistent allocation to keep the blob allocated indefinetely
+BlobAssetReference<SomeDataForBlob> blobAssetRef = builder.CreateBlobAssetReference<SomeDataForBlob>(Allocator.Persistent);
+
+// 5. We don't need the builder anymore so we can dispose it
+builder.Dispose();
+```
+The blob builder construct the data stored in the blob asset, store the internal references as offsets and copy the finished blob asset into a single allocation referenced by the returned `BlobAssetReference<T>`. 
+
+To access and pass a blob, by reference we must use ref keyword or [`BlobAssetReference`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.BlobAssetReference-1.html). This guarantee the blob assets will continue to resolve to the right absolute memory address since its data must be relocable.
+
+### Access blob assets on a component
+
+Once we have a `BlobAssetReference`, we can store the reference in a component and access it later. **All parts of a blob asset that contain internal pointers must be accessed by reference**.
+
+```c#
+// The component with a BlobAssetReference
+struct MyComponent : IComponentData
+{
+    BlobAssetReference<SomeData> Blob;
+}
+
+// Access data in the component
+int GetDataFromMyComponent(ref MyComponent component)
+{
+    // Get reference to the data in our blob asset
+    // We need the keyword ref to keep internal reference valid, in this case we only have int so it's not really necessary
+    ref SomeData blobData = ref component.Blob.Value;
+
+    // we can access the data in the blob asset
+    int valueToReturn;
+    if(data.ValueA < 0)
+    {
+        valueToReturn = blobData.ValueB; // ref is needed if the struct we access contains internal reference, it not the case here
+    }
+    else
+    {
+        valueToReturn = blobData.ValueB; // ref is needed if the struct we access contains internal reference, it not the case here
+    }
+    
+    return valueToReturn;
+}
+```
+
+### Use special types in blob assets (BlobArray, BlobString, BlobPointer)
+
+#### BlobArray
+
+```C#
+// The data we want to put in the blob asset
+struct SomeData
+{
+    public int ValueA;
+    public int ValueB;
+}
+
+struct MyBlobArray // a struct that keep a blob array of SomeData
+{
+    public BlobArray<SomeData> BlobDatas;
+}
+
+// Blob asset construction
+BlobAssetReference<MyBlobArray> CreateBlobWithArray()
+{
+    BlobBuilder builder = new BlobBuilder(Allocator.Temp);
+    ref MyBlobArray blobArray = ref builder.ConstructRoot<MyBlobArray>();
+
+    // Allocate room for the SomeData objects in the blob array
+    BlobBuilderArray<SomeData> arrayBuilder = builder.Allocate(ref blobArray.BlobDatas, 3); // 3 is the size of the blob array.
+
+    // Initialize data in the array builder
+    arrayBuilder[0] = new SomeData {ValueA = 1 , ValueB = 2};
+    arrayBuilder[1] = new SomeData {ValueA = 3 , ValueB = 4};
+    arrayBuilder[2] = new SomeData {ValueA = 5 , ValueB = 6};
+
+    // We complete the creation of the blob asset
+    BlobAssetReference<MyBlobArray> blobAssetRef = builder.CreateBlobAssetReference<MyBlobArray>(Allocator.Persistent)
+    builder.Dispose();
+    return blobAssetRef;
+}
+```
+
+#### BlobString
+
+```C#
+// The data we want to put in the blob asset
+struct SomeData
+{
+    public int ValueA;
+    public BlobString Name;
+}
+
+// Blob asset construction
+BlobAssetReference<SomeData> CreateBlobWithString(string name)
+{
+    BlobBuilder builder = new BlobBuilder(Allocator.Temp);
+    ref SomeData blobData = ref builder.ConstructRoot<SomeData>();
+
+    blobData.ValueA = 1;
+    // Create a new blob string and set it's value
+    builder.AllocateString(ref blobData.Name, name)
+
+    // We complete the creation of the blob asset
+    BlobAssetReference<SomeData> blobAssetRef = builder.CreateBlobAssetReference<SomeData>(Allocator.Persistent)
+    builder.Dispose();
+    return blobAssetRef;
+}
+```
+
+#### BlobPointer
+
+```C#
+// The data we want to put in the blob asset
+struct SomeData
+{
+    public BlobPtr<BlobString> FavouriteName; // a pointer to my favorite name in the BlobArray
+    public BlobArray<BlobString> Names;
+}
+
+// Blob asset construction
+BlobAssetReference<SomeData> CreateBlobWithPointer(string name)
+{
+    BlobBuilder builder = new BlobBuilder(Allocator.Temp);
+    ref SomeData blobData = ref builder.ConstructRoot<SomeData>();
+
+    // Allocate room for the SomeData objects in the blob array
+    BlobBuilderArray<BlobString> arrayBuilder = builder.Allocate(ref blobData.Names, 3); // 3 is the size of the blob array.
+
+    // Initialize data in the array builder
+    builder.AllocateString(ref arrayBuilder[0], "Tom");
+    builder.AllocateString(ref arrayBuilder[1], "Juliette");
+    builder.AllocateString(ref arrayBuilder[2], "Marwan");
+
+    // Set favorite name element, the pointer point to the third entry in the array
+    builder.SetPointer(ref blobData.FavouriteName, ref arrayBuilder[2]);
+
+    // We complete the creation of the blob asset
+    BlobAssetReference<SomeData> blobAssetRef = builder.CreateBlobAssetReference<SomeData>(Allocator.Persistent)
+    builder.Dispose();
+    return blobAssetRef;
+}
+```
+
+### Dispose BlobAssetReference
+
+Any blob asset allocated at runtime with `BlobBuilder.CreateBlobAssetReference()` must be disposed manually. It doesn't applies to blob asset that were baked in a entity subscene and loaded from disk, these are automatically released when they are not referenced anymore by a component.
+
+```c#
+// A system that create a blob asset at runtime
+public partial struct BlobAssetInRuntimeSystem : ISystem
+{
+    private BlobAssetReference<MarketData> _blobAssetReference;
+
+    public void OnCreate(ref SystemState state)
+    {
+        // Create a blob asset and assign it
+        
+        using (var builder = new BlobBuilder(Allocator.Temp))
+        {
+            ref SomeData data = ref builder.ConstructRoot<SomeData>();
+            data.ValueA = 1;
+            data.ValueB = 2;
+            _blobAssetReference = builder.CreateBlobAssetReference<SomeData>(Allocator.Persistent);
+        }
+    }
+
+    public void OnDestroy(ref SystemState state)
+    {
+        // We need to dispose of the BlobAssetReference we created at OnDestroy to free it's memory
+        _blobAssetReference.Dispose();
+    }
+}
+```
+
+### Bake blob asset and BlobAssetStore
 
 
 
