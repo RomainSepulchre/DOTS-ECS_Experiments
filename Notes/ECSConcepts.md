@@ -229,6 +229,8 @@ int GetDataFromMyComponent(ref MyComponent component)
 }
 ```
 
+> To debug a blob asset we must use the value from a `BlobAssetReference<T>`. Since a blob asset implement internal reference by using a relative offset, copying a `BlobString` struct (or any other type with internal reference) copies the relative offset and not what it's actually pointing to, making the result an unusable `BlobString`.
+
 ### Use special types in blob assets (BlobArray, BlobString, BlobPointer)
 
 #### BlobArray
@@ -361,5 +363,98 @@ public partial struct BlobAssetInRuntimeSystem : ISystem
 
 ### Bake blob asset and BlobAssetStore
 
+Blob asset can be created offline and be available at runtime when they are created in a baker.
 
+The blob asset system use the [`BlobAssetStore`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.BlobAssetStore.html) to keep internal ref counting and ensure a blob is disposed when it's not anymore referenced by something. When creating a blob asset using a baker, the baker internally have access to a [`BlobAssetStore`] but we need to retrieve it from the baking system.
 
+Since baker are deterministic and incremental, we need to follow extra steps to use blob assets in baking: after we created a `BlobAssetReference` we need to register the `BlobAsset` to the baker by calling the `AddBlobAsset<T>()` method from the baker.
+
+```C#
+// Some data to store in the blob asset
+struct BakedBlobData
+{
+    public float ValueA;
+    public float ValueB;
+}
+
+// Component that will hold the blobAssetReference
+struct BakedBlobComponent : IComponentData
+{
+    public BlobAssetReference<BakedBlobData> Blob;
+}
+
+// Authoring for blob asset baker
+public class BakedBlobAuthoring : MonoBehaviour
+{
+    // Value than can be set in the inspector
+    public float ValueA;
+    public float ValueB;
+}
+
+// Baker
+class BakedBlobBaker : Baker<BakedBlobAuthoring>
+{
+    public override void Bake(BakedBlobAuthoring authoring)
+    {
+        // Create a new builder, construct the root and fill with data like in a classic blob asset creation
+        var builder = new BlobBuilder(Allocator.Temp);
+        ref BakedBlobData bakedblob = ref builder.ConstructRoot<BakedBlobData>();
+        bakedblob.ValueA = authoring.ValueA;
+        bakedblob.ValueB = authoring.ValueB;
+
+        // Create the BlobAssetReference and copy data to its final localation.
+        var blobReference = builder.CreateBlobAssetReference<BakedBlobData>(Allocator.Persistent);
+
+        // Make sure to dispose the builder itself so all internal memory is disposed.
+        builder.Dispose();
+
+        // Register the Blob Asset to the Baker for de-duplication and reverting.
+        AddBlobAsset<BakedBlobData>(ref blobReference, out var hash);
+
+        // Finally bake the entity and add the component with our BlobAssetReference
+        var entity = GetEntity(TransformUsageFlags.None);
+        AddComponent(entity, new BakedBlobComponent() {Blob = blobReference});
+    }
+}
+```
+
+> **! If a blob asset is not register to the baker, the ref counting never update and the blob can be deallocated unexpectedly.**
+
+#### De-deduplication with custom hashes
+
+The previous example let the baker handle all de-duplication which means we need to create the blob asset first and then the baker de-duplicate and dispose the extra blob asset. In some cases we might want to de-duplicate before the creataion of the blob asset in the baker.
+
+To do this instead of letting the baker generate a hash when calling `AddBlobAsset<T>()`, **we can use a custom hash**. When multiple bakers have access or generate the same hash, the hash can be used to de-duplicate before the blob asset creation. [`TryGetBlobAssetReference()`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.IBaker.TryGetBlobAssetReference.html) can be used to check if a custom hash is already registered.
+
+```c#
+class BakedBlobBaker : Baker<BakedBlobAuthoring>
+{
+    public override void Bake(BakedBlobAuthoring authoring)
+    {
+        // Create a custom hash
+        var customHash = new Unity.Entities.Hash128(
+            (uint) authoring.ValueA.GetHashCode(),
+            (uint) authoring.ValueB.GetHashCode(), 0, 0);
+
+        // Try to get a BlobAssetReference using the custom hash
+        // If we get one we directly create the entity and use the BlobAssetReference when adding the component
+        // Otherwise we create the BlobAssetReference ourself since it doesn't exist yet.
+        if (!TryGetBlobAssetReference(customHash, out BlobAssetReference<MarketData> blobReference))
+        {
+            // Classic BlobAssetReference creation
+            var builder = new BlobBuilder(Allocator.Temp);
+            ref BakedBlobData bakedblob = ref builder.ConstructRoot<BakedBlobData>();
+            bakedblob.ValueA = authoring.ValueA;
+            bakedblob.ValueB = authoring.ValueB;
+            blobReference = builder.CreateBlobAssetReference<BakedBlobData>(Allocator.Persistent);
+            builder.Dispose();
+
+            // Register the Blob Asset to the Baker for de-duplication and reverting.
+            AddBlobAssetWithCustomHash<BakedBlobData>(ref blobReference, customHash);
+        }
+
+        var entity = GetEntity(TransformUsageFlags.None);
+        AddComponent(entity, new BakedBlobComponent() {Blob = blobReference});
+    }
+}
+```
