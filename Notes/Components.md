@@ -474,7 +474,7 @@ SystemAPI.QueryBuilder().WithAllChunkComponent<MyChunkComponent>().Build();
 
 [Transform in entities documentation](https://docs.unity3d.com/Packages/com.unity.entities@1.2/manual/transforms-concepts.html)
 
-`LocalTransform` is the main standard component that represent the transform of an entity.
+`LocalTransform` is the main standard component that represent the transform of an entity. It represent the entity relative position, rotation and scale.
 
 ### Create a transform hierarchy
 
@@ -499,13 +499,82 @@ The `ParentSystem` will do the rest of the job by ensuring that:
 
 We can read from the `Child` and `PreviousParent` components but we should not modify them directly. We should only modify the `Parent` component when modying a hierarchy.
 
-> ***What is the `ParentSystem` ? Is this a default system ? when does it update ? I need to know more on this.***
+> The `ParentSystem` is a default system, initialized in a default world. It maintains the `Child` component buffer based on the `Parent` component of every children. When we update a `Parent` component on a child, the `Child` component od the parent is only updated once the `ParentSystem` has run.
+
+> Enabling the static flag on everything that will not move improve performance and reduce memory consuption.
 
 ### LocalToWorldSystem
 
 Every frame a system called `LocalToWorldSystem` computes each entity world space transform from the `LocalTransform` of the entity and its ancestors and then assign it to the entity `LocalToWorld` component.
 
 > Entity.Graphics systems read `LocalToWorld` but it doesn't read any other transform components. It is the only component an entity needs to be rendered.
+
+### Transform API
+
+**[The ECS Transform equivalence of Unity Engine Transform property and method can be found here](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/transforms-comparison.html).**
+
+When working with `LocalTransform` there is no API method to modify the component value, all methods return a new value that must be assigned to the component. The only way to modify a `LocalTransform` is by writing to the Position, Rotation, and Scale properties.
+
+For example if we want to rotate a transform around Z with `RotateZ()`:
+```c#
+localTransform = localTransform.RotateZ(angle); // we assign the result of RotateZ to the localTransform
+```
+
+We can also directly modify a property of the component itself. For example if we want to modify the position:
+```c#
+myTransform.Position += math.up();
+// is the equivalent of
+myTransform = myTransform.Translate(math.up());
+```
+
+#### [TransformHelpers](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/transforms-helpers.html)
+
+[`TransformHelpers`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Transforms.TransformHelpers.html) extension methods can be useful to work with transformation matrices, in particular with the `float4x4` contained in the `LocalToWorld` component.
+
+**TransformPoint and InverseTransformPoint**  
+For example we can minimize the use of matrix math by using `TransformPoint()` to tranform a point from local to world space:
+```c#
+// Get a world position from a local position using TransformPoint
+float3 aWorldPosition = myLocalToWorld.Value.TransformPoint(myLocalPoint);
+
+// We can also use InverseTransformPoint to get a local position from a world position
+float3 aLocalPoint = myLocalToWorld.Value.InverseTransformPoint(myWorldPoint);
+```
+
+> The same thing can be done with a direction instead of a point by using `TransformDirection()` and `InverseTransformDirection()`.
+
+**LookAtRotation**
+`TransformHelpers.LookAtRotation()` compute a rotation so its *forward* points to the target:
+```c#
+float3 eyeWorldPosition = new float3(1, 2, 3);
+float3 targetWorldPosition = new float3(4, 5, 6);
+quaternion lookRotation = TransformHelpers.LookAtRotation(eyeWorldPosition, targetWorldPosition, math.up());
+```
+
+**ComputeWorldTransformMatrix**  
+
+`ComputeWorldTransformMatrix` can be used to immediately use an entity's precise world transformation matrix. This is useful when we want to:
+
+- Perform a raycast from an entity which might be part of a hierarchy (ex: the wheel of a car). the ray origin must be in world space but the entity's `LocalTransform` might be relative to its parent.
+- Track another entity's transform in world-space with another entity with at least one of the entities, the targeted or targeting entity being in a transform hierachy.
+- To compute a new `LocalToWorld` value for an entity in the `LateSimulationSystenmGroup` (after the `TransformSystemGroup` has updated be before the `PresentationSystemGroup` runs).
+
+### Transform usage flags
+
+[Transform usage flags](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/transforms-usage-flags.html) controls how Unity will convert MonoBehaviour components to entity data. They can be used to define which transform should be added on the entity during the baking process and help to reduce unnecessary transform component on the baked entities.
+
+More than one flag can be used on an Entity and Unity combine all the flags before adding the transform components.
+
+Here is a list of every transform usage flags and their purpose:
+
+- **None**: No specific transform component are required (other bakers on the GameObject can still add `TransformUsageFlags` value to the entity).
+- **Renderable**: Require the necessary component to be rendered but doesn't require the transform components necessary to move the entity at runtime.
+- **Dynamic**: Require the necessary components to move the entity at runtime.
+- **WorldSpace**: The entity must be in world space even if it has a dynamic entity as parent.
+- **NonUniformScale**: Requires transform component that represent a non uniform scale.
+- **ManualOveride**: Ignore all `TransformUsageFlags` values from other bakers on the same GameObject. No transform components are added to the entity.
+
+> The baker for default GameObject component automatically add the equivalent ECS transform usage flags to the baked entity. For example, a game object with a `MeshRenderer` component will be baked into an entity with the `Renderable` transform usage flag.
 
 ## Aspects
 
