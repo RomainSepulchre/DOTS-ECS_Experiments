@@ -499,7 +499,7 @@ The `ParentSystem` will do the rest of the job by ensuring that:
 
 We can read from the `Child` and `PreviousParent` components but we should not modify them directly. We should only modify the `Parent` component when modying a hierarchy.
 
-> The `ParentSystem` is a default system, initialized in a default world. It maintains the `Child` component buffer based on the `Parent` component of every children. When we update a `Parent` component on a child, the `Child` component od the parent is only updated once the `ParentSystem` has run.
+> The `ParentSystem` is a built-in system, initialized in a default world. It maintains the `Child` component buffer based on the `Parent` component of every children. When we update a `Parent` component on a child, the `Child` component od the parent is only updated once the `ParentSystem` has run.
 
 > Enabling the static flag on everything that will not move improve performance and reduce memory consuption.
 
@@ -575,6 +575,25 @@ Here is a list of every transform usage flags and their purpose:
 - **ManualOveride**: Ignore all `TransformUsageFlags` values from other bakers on the same GameObject. No transform components are added to the entity.
 
 > The baker for default GameObject component automatically add the equivalent ECS transform usage flags to the baked entity. For example, a game object with a `MeshRenderer` component will be baked into an entity with the `Renderable` transform usage flag.
+
+### Custom transform systems
+
+If we need to add a specific transform functionality, [it is possible to customize the built-in transform system](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/transforms-custom.html).
+
+First of all, the built-in transform system use [write groups](Queries.md#write-groups) internally and we can configure them to ignore the entities we want to process with our custom transform system.
+
+To create a custom transform system we must follow these steps:
+
+1. Substitute the `LocalTransform` component.
+    - Create a .cs file that define a substitute class for `LocalTrnasform`. The best way to do it is to copy *LocalTransform.cs* from the entities package and rename it.
+    - Change the property and method to suit our needs.
+2. Create an authoring component to receive our custom transforms.
+    - The entities that will be processed by the custom system must: have our custom local transform substitute, have a `LocalToWorld` component and if it has a parent it must also have a `Parent` component that points to it.
+    - The best way to ensure we meet these requirement is by adding an authoring component to each entities and use the `TransformUsageFlags.ManualOverride` to be sure the entity won't receive any built-in transform components.
+3. Replace `LocalToWorldSystem`
+    - Same as the `LocalTransform` substitute, we can copy *LocalToWorldSystem.cs* and rename it to create a substitute system that fit our needs.
+    - In the system we replace all the occurence to the built-in `LocalTransform` by our substitute transfrom component.
+    - We also need to remove `WithOptions(EntityQueryOptions.FilterWriteGroup);` from the queries to be sure the system won't exclude the corresponding entities like the built-in transform system.
 
 ## Aspects
 
