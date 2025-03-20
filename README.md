@@ -16,6 +16,7 @@
     - [Transform Components and Systems](Notes/ECSConcepts.md#transform-components-and-systems)
     - [Access entity and components with jobs](Notes/ECSConcepts.md#access-entity-and-components-with-jobs)
     - [Baking](Notes/ECSConcepts.md#baking)
+    - [State machine with ECS](Notes/ECSConcepts.md#state-machine-with-ecs)
 - [Systems](Notes/Systems.md)
     - [System(Isystem, SystemBase)](Notes/Systems.md#system)
     - [System groups and system organization](Notes/Systems.md#system-groups-and-systems-organization)

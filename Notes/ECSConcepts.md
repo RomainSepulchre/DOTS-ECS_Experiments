@@ -13,6 +13,7 @@ Summary:
 - [Query](#query)
 - [Access entity and components with jobs](#access-entity-and-components-with-jobs)
 - [Baking](#baking)
+- [State machine with ECS](#state-machine-with-ecs)
 
 
 Resources links:
@@ -458,3 +459,63 @@ class BakedBlobBaker : Baker<BakedBlobAuthoring>
     }
 }
 ```
+
+## State machine with ECS
+
+There is 3 differents approach when implementing a state machine with entities:
+
+- **Per-state data clustering**: the state define the archetype where entity data are grouped and we iterare through the entities in a same state.
+- **Per-state data branching**: all the entities with different states are kept in the same archetype and we filter out the entity we want to process by their state.
+- **Per state machine data branching**: all the entities with different states are kept in the same archetype and we branch the logic depending on their state.
+
+### Per-state data clustering
+
+To efficiently go through all entities that with the same state, we group them in archetype based on their state.  
+With this approach we use:
+
+- Tag components (the tag component define the state and we remove the tag component and add a new corresponding tag component when we change the state)
+- Shared components (We use the shared component values to group the entities in different chunks)
+
+#### Implementation issues
+
+> *** TODO: Complete issues ***
+
+- Strutural changes: use structural change to set the state which impact performance.
+- Data Fragmentation: can happen when there is many states but few entities, we will have lot of chunk that have few entities.
+- Unneeded data fetching: can happen with data fragmentation, we might iterate over all the entities in a chunk but only a few of them should really be processed.
+- Job overhead
+- Complex dependencies  
+
+### Per-state data branching
+
+The entities are kept in the same archetype regardless of their state and we filter the entities we want to process based on their state. 
+With this approach we use:
+
+- Enableable components (We enable the component that correspond to the state whwn we enter the state and we disable it when we leave the state)
+- Jobs per state (Use one job per state and the job iterate only through entities that have the corresponding state)
+
+#### Implementation issues
+
+> *** TODO: Complete issues ***
+
+- Unneeded data fetching: can happen if there are several chunks with few entities in the desired state, or if a high number of entities are in a idle or no-op state. We might iterate over all the entities in a chunk but only a few of them should really be processed.
+- Repeated data fetching
+- Job overhead
+- Complex dependencies
+- Triggering reactive systems
+
+### Per state machine data branching
+
+The entities are kept in the same archetype regardless of their state and we branch the logic depending on their state.
+
+To do that we use a value like an enum to switch between every logic state in a single job.
+
+#### Implementation issues
+
+> *** TODO: Complete issues ***
+
+- Unneeded data fetching: can happen if a high number of entities are in a idle or no-op state. Unity might fetch data for all states might also, unless you use IJobChunk. We might iterate over all the entities in a chunk but only a few of them should really be processed.
+- Job overhead
+- Complex dependencies
+- Triggering reactive systems
+
