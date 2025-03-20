@@ -468,54 +468,84 @@ There is 3 differents approach when implementing a state machine with entities:
 - **Per-state data branching**: all the entities with different states are kept in the same archetype and we filter out the entity we want to process by their state.
 - **Per state machine data branching**: all the entities with different states are kept in the same archetype and we branch the logic depending on their state.
 
+> Using more than one State Machine on a entity might lead to more issues since state might not be mutually exclusive. THis could cause data fragmentation and repeated data collection. It possible to split entities to simplity the se case
+
 ### Per-state data clustering
 
 To efficiently go through all entities that with the same state, we group them in archetype based on their state.  
 With this approach we use:
 
-- Tag components (the tag component define the state and we remove the tag component and add a new corresponding tag component when we change the state)
-- Shared components (We use the shared component values to group the entities in different chunks)
+- **Tag components** (the tag component define the state and we remove the tag component and add a new corresponding tag component when we change the state)
+- **Shared components** (We use the shared component values to group the entities in different chunks)
 
 #### Implementation issues
 
-> *** TODO: Complete issues ***
+- *Strutural changes*: the solution is based on structural change to set the state which impact performance.
+    - => Use [CPU usage profiler][cpuProfiler] and [entities strutural changes profiler][structChangesProfiler] modules to monitor structural changes.
+- *Data Fragmentation*: can happen when there is many states but few entities. Each state means new archetype and chunks which lead to a poor chunk use (-> cache misses) since we have lot of chunk that have few entities.
+    - => Use [archetype window][archetypeWindow] to mesure chunk use and check how to [manage chunk allocation][manageChunkAlloc].
+- *Unneeded data fetching*: can happen with high data fragmentation. We might iterate over all the entities in a chunk while we only a few of them should really be processed.
+    - => Use a cache miss native profilers such as [VTune][Vtune] or Instruments.
+- *Job overhead*: can happen if there is more than one state aside from no-op state. Scheduling a job has an overhead, when we have one job per state, the overhead scale with the number of state.
+    - => Use native profiler to find scheduling method and check [job overhead documentaation][jobOverheadDoc].
 
-- Strutural changes: use structural change to set the state which impact performance.
-- Data Fragmentation: can happen when there is many states but few entities, we will have lot of chunk that have few entities.
-- Unneeded data fetching: can happen with data fragmentation, we might iterate over all the entities in a chunk but only a few of them should really be processed.
-- Job overhead
-- Complex dependencies  
+- *Complex dependencies*: can happen when the jobs need to access most of the entities components. If every job access the same components, it prevent the jobs to run in parallel.
+    - => Use the profiler to find job dependencies and idle systems.
+
+[cpuProfiler]: https://docs.unity3d.com/Manual/ProfilerCPU.html
+[structChangesProfiler]: https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/profiler-module-structural-changes.html
+[archetypeWindow]: https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/editor-archetypes-window.html
+[manageChunkAlloc]: https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/performance-chunk-allocations.html
+[Vtune]: https://www.intel.com/content/www/us/en/developer/tools/oneapi/vtune-profiler.html
+[jobOverheadDoc]: https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/job-overhead.html
 
 ### Per-state data branching
 
 The entities are kept in the same archetype regardless of their state and we filter the entities we want to process based on their state. 
 With this approach we use:
 
-- Enableable components (We enable the component that correspond to the state whwn we enter the state and we disable it when we leave the state)
-- Jobs per state (Use one job per state and the job iterate only through entities that have the corresponding state)
+- **Enableable components** (We enable the component that correspond to the state whwn we enter the state and we disable it when we leave the state)
+- **Jobs per state** (Use one job per state and the job iterate only through entities that have the corresponding state)
 
 #### Implementation issues
 
-> *** TODO: Complete issues ***
+- *Unneeded data fetching*: can happen if there are several chunks with few entities in the desired state, or if a high number of entities are in a idle or no-op state. We might iterate over all the entities in a chunk while we only a few of them should really be processed.
+    - => Use a cache miss native profilers such as [VTune][Vtune] or Instruments.
 
-- Unneeded data fetching: can happen if there are several chunks with few entities in the desired state, or if a high number of entities are in a idle or no-op state. We might iterate over all the entities in a chunk but only a few of them should really be processed.
-- Repeated data fetching
-- Job overhead
-- Complex dependencies
-- Triggering reactive systems
+- *Repeated data fetching*: can happen if there is more than one state aside from no-op state. When we iterate over every entities once per state, we can iterate over the same entities several times which has an overhead.
+    - => Use a cache miss native profilers such as [VTune][Vtune] or Instruments.
+
+- Job overhead: can happen if there is more than one state aside from no-op state. Scheduling a job has an overhead, when we have one job per state, the overhead scale with the number of state.
+    - => Use native profiler to find scheduling method and check [job overhead documentaation][jobOverheadDoc].
+
+- *Complex dependencies*: can happen when the jobs need to access most of the entities components. If every job access the same components, it prevent the jobs to run in parallel.
+    - => Use the profiler to find job dependencies and idle systems.
+
+- *Triggering reactive systems*: can happen if entire chunks with desirabled state are skipped due to enableable components. ***(I'm not sure I really understand this and the relation with triggering a reactive system ?)***. Accessing data with the write access while it is not needed can imply performance intensive recalculation.
+    - => Monitor reactive systems in [Systems window][systemWindow] and [entities journaling][entitiesJournaling].
+
+[systemWindow]: https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/editor-systems-window.html 
+[entitiesJournaling]: https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/entities-journaling.html
 
 ### Per state machine data branching
 
 The entities are kept in the same archetype regardless of their state and we branch the logic depending on their state.
 
-To do that we use a value like an enum to switch between every logic state in a single job.
+To do that we **use a value like an enum to switch between every logic state in a single job**.
 
 #### Implementation issues
 
-> *** TODO: Complete issues ***
+- *Unneeded data fetching*: can happen if a high number of entities are in a idle or no-op state (Unity might fetch data for all states, unless you use IJobChunk). We might iterate over all the entities in a chunk while we only a few of them should really be processed.
+    - => Use a cache miss native profilers such as [VTune][Vtune] or Instruments.
 
-- Unneeded data fetching: can happen if a high number of entities are in a idle or no-op state. Unity might fetch data for all states might also, unless you use IJobChunk. We might iterate over all the entities in a chunk but only a few of them should really be processed.
-- Job overhead
-- Complex dependencies
-- Triggering reactive systems
+- *Job overhead*: should be minimal since this approach only require one job. Scheduling a job has an overhead, when we have one job per state, the overhead scale with the number of state.
+    - => Use native profiler to find scheduling method and check [job overhead documentaation][jobOverheadDoc].
+
+- *Complex dependencies*: can happen when the state machine job need to access most of the entities components. If other jobs access the same components, it prevent the jobs to run in parallel.
+    - => Use the profiler to find job dependencies and idle systems.
+
+- *Triggering reactive systems*: can happen if entire chunks with desirabled state are skipped due to enableable components. ***(I'm not sure I really understand this and the relation with triggering a reactive system ?)***. Accessing data with the write access while it is not needed can imply performance intensive recalculation.
+    - => Monitor reactive systems in [Systems window][systemWindow] and [entities journaling][entitiesJournaling].
+
+
 
