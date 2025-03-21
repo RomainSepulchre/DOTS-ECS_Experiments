@@ -5,7 +5,7 @@ namespace ECS.EnemyRunAwayDemo
 {
     public class PlayerAuthoring : MonoBehaviour
     {
-        
+        public float speed;
     }
 
     public class PlayerBaker : Baker<PlayerAuthoring>
@@ -14,7 +14,10 @@ namespace ECS.EnemyRunAwayDemo
         {
             Entity entity = GetEntity(TransformUsageFlags.Dynamic);
 
-            Player newPlayer = new Player();
+            Player newPlayer = new Player()
+            {
+                Speed = authoring.speed,
+            };
 
             AddComponent(entity, newPlayer);
         }
