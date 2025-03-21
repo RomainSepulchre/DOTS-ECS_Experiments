@@ -15,7 +15,17 @@ namespace ECS.EnemyRunAwayDemo
     {
         public override void Bake(EnemyAuthoring authoring)
         {
-            throw new System.NotImplementedException();
+            Entity entity = GetEntity(TransformUsageFlags.Dynamic);
+
+            Enemy newEnemy = new Enemy()
+            {
+                Speed = authoring.speed,
+                TooCloseThreshold = authoring.tooCloseThreshold,
+                XAreaLimit = authoring.xAreaLimit,
+                YAreaLimit = authoring.yAreaLimit,
+            };
+
+            AddComponent(entity, newEnemy);
         }
     }
 }

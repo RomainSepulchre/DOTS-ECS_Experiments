@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ECS.EnemyRunAwayDemo
 {
-    public class Enemy : IComponentData
+    public struct Enemy : IComponentData
     {
         public Entity Player;
         public float Speed;

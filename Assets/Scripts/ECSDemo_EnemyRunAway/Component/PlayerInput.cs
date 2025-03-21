@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ECS.EnemyRunAwayDemo
 {
-    public class PlayerInput : IComponentData
+    public struct PlayerInput : IComponentData
     {
         public bool UpArrowPressed;
         public bool DownArrowPressed;

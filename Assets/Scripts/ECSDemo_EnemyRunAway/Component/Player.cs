@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ECS.EnemyRunAwayDemo
 {
-    public class Player : IComponentData
+    public struct Player : IComponentData
     {
         
     } 

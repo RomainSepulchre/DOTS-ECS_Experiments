@@ -16,7 +16,18 @@ namespace ECS.EnemyRunAwayDemo
     {
         public override void Bake(EnemySpawnerAuthoring authoring)
         {
-            throw new System.NotImplementedException();
+            Entity entity = GetEntity(TransformUsageFlags.None);
+
+            EnemySpawner newSpawner = new EnemySpawner()
+            {
+                EnemyToSpawn = GetEntity(authoring.enemyToSpawn, TransformUsageFlags.Dynamic),
+                Player = GetEntity(authoring.player, TransformUsageFlags.Dynamic),
+                SpawnAmount = authoring.spawnAmount,
+                SpawnAreaXLimit = authoring.spawnAreaXLimit,
+                SpawnAreaYLimit = authoring.spawnAreaYLimit
+            };
+
+            AddComponent(entity, newSpawner);
         }
     }
 }

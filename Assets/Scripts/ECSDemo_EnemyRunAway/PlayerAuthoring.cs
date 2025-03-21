@@ -12,7 +12,11 @@ namespace ECS.EnemyRunAwayDemo
     {
         public override void Bake(PlayerAuthoring authoring)
         {
-            throw new System.NotImplementedException();
+            Entity entity = GetEntity(TransformUsageFlags.Dynamic);
+
+            Player newPlayer = new Player();
+
+            AddComponent(entity, newPlayer);
         }
     }
 }

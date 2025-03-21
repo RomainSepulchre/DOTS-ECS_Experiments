@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ECS.EnemyRunAwayDemo
 {
-    public class EnemySpawner : IComponentData, IEnableableComponent // Enableable component or disable system/remove component ?
+    public struct EnemySpawner : IComponentData, IEnableableComponent // Enableable component or disable system/remove component ?
     {
         public Entity EnemyToSpawn;
         public Entity Player;
