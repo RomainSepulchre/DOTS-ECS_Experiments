@@ -5,7 +5,8 @@ namespace ECS.EnemyRunAwayDemo
 {
     public class EnemySpawnerAuthoring : MonoBehaviour
     {
-        public Prefab enemyToSpawn;
+        public GameObject enemyToSpawn;
+        public GameObject player;
         public int spawnAmount;
         public float spawnAreaXLimit;
         public float spawnAreaYLimit;
