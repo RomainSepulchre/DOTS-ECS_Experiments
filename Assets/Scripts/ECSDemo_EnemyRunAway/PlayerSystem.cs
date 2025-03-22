@@ -11,6 +11,7 @@ namespace ECS.EnemyRunAwayDemo
         SystemHandle inputSysHandle;
         EntityQuery playerQuery;
 
+        // Cannot BurstCompile state.World.GetExistingSystem<InputSystem>()
         public void OnCreate(ref SystemState state)
         {
             inputSysHandle = state.World.GetExistingSystem<InputSystem>();
