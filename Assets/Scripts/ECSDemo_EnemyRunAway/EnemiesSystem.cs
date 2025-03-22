@@ -21,23 +21,25 @@ namespace ECS.EnemyRunAwayDemo
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            // TODO: Understand what's happen when using ComponentLookup<LocalTransform> + ref LocalTransform in the job ?
+            // ? What is happening when using ComponentLookup<LocalTransform> + ref LocalTransform in the job ?
+            // -> It doesn't seems to be possible to use both in the same job, it look like in this case I should only use the component lookup to access LocalTransform which is fine
             RunAwayFromPlayer runAwayFromPlayerJob = new RunAwayFromPlayer()
             {
                 LocalTransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(),
                 DeltaTime = SystemAPI.Time.DeltaTime
             };
 
-            // TODO: schedule in parrallel when ComponentLookup<LocalTransform> + ref LocalTransform is fixed
-            //Schedule the job and reassign system dependency
-            state.Dependency = runAwayFromPlayerJob.Schedule(state.Dependency);
+            // Schedule the job and reassign system dependency
+            // [NativeDisableParallelForRestriction] ont the ComponentLookup in the job allow to use parrallel scheduling
+            state.Dependency = runAwayFromPlayerJob.ScheduleParallel(state.Dependency);
         }
     }
 
     [BurstCompile]
     public partial struct RunAwayFromPlayer : IJobEntity
     {
-        public ComponentLookup<LocalTransform> LocalTransformLookup;
+        // using [NativeDisableParallelForRestriction] allow to run job in parallel but we need to be sure the data we look up doesn't overlaps the data we want to read and write
+        [NativeDisableParallelForRestriction] public ComponentLookup<LocalTransform> LocalTransformLookup;
         [ReadOnly] public float DeltaTime;
 
         public void Execute(in Enemy enemy, Entity entity)
@@ -49,14 +51,52 @@ namespace ECS.EnemyRunAwayDemo
 
             if (math.distancesq(playerPos, enemyPos) < math.lengthsq(enemy.TooCloseThreshold))
             {
-                float3 dirPlayerToThis = math.normalize(enemyPos - playerPos);
+                float3 runAwayDirection;
 
-                // TODO: Add move area limits
+                float3 dirPlayerToThis = math.normalize(enemyPos - playerPos);
+                float3 futurePos = enemyPos + (dirPlayerToThis / 2); // check where enemy will be if he move of half the player dir vector
+
+                bool playerIsLower = playerPos.y < enemyPos.y;
+                bool playerIsAtLeft = playerPos.x < enemyPos.x;
+
+                if (futurePos.x >= enemy.XAreaLimit) // Near right limit
+                {
+                    if(playerIsLower) runAwayDirection = GetPerpendicularCounterClockwiseVector(futurePos);
+                    else runAwayDirection = GetPerpendicularClockwiseVector(futurePos);
+                }
+                else if (futurePos.x <= -enemy.XAreaLimit) // Near left limit
+                {
+                    if (playerIsLower) runAwayDirection = GetPerpendicularClockwiseVector(futurePos);
+                    else runAwayDirection = GetPerpendicularCounterClockwiseVector(futurePos);
+                }
+                else if (futurePos.y >= enemy.YAreaLimit) // Near top limit
+                {
+                    if (playerIsAtLeft) runAwayDirection = GetPerpendicularClockwiseVector(futurePos);
+                    else runAwayDirection = GetPerpendicularCounterClockwiseVector(futurePos);
+                }
+                else if (futurePos.y <= -enemy.YAreaLimit) // Near bottom limit
+                {
+                    if (playerIsAtLeft) runAwayDirection = GetPerpendicularCounterClockwiseVector(futurePos);
+                    else runAwayDirection = GetPerpendicularClockwiseVector(futurePos);
+                }
+                else
+                {
+                    runAwayDirection = dirPlayerToThis;
+                }
 
                 RefRW<LocalTransform> enemyTransform = LocalTransformLookup.GetRefRW(entity);
-                enemyTransform.ValueRW.Position += (dirPlayerToThis * enemy.Speed * DeltaTime);
-                
+                enemyTransform.ValueRW.Position += (runAwayDirection * enemy.Speed * DeltaTime);
             }
+        }
+
+        private float3 GetPerpendicularClockwiseVector(float3 initialVector)
+        {
+            return new float3(initialVector.y, -initialVector.x, initialVector.z);
+        }
+
+        private float3 GetPerpendicularCounterClockwiseVector(float3 initialVector)
+        {
+            return new float3(-initialVector.y, initialVector.x, initialVector.z);
         }
     }
 

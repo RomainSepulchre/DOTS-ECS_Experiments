@@ -49,7 +49,7 @@ namespace Jobs.EnemyRunAwayDemo
                     }
                     else // Player is higher so we need to go counter clockwise
                     {
-                        direction = GetPerpendicularClockwiseVector(dirPlayerToThis);
+                        direction = GetPerpendicularCounterClockwiseVector(dirPlayerToThis);
                     }
                 }
                 else if (positionPrevision.y >= YAreaLimit) // Reach limit on the top
@@ -60,14 +60,14 @@ namespace Jobs.EnemyRunAwayDemo
                     }
                     else // Player is at our right so we need to go counter clockwise
                     {
-                        direction = GetPerpendicularClockwiseVector(dirPlayerToThis);
+                        direction = GetPerpendicularCounterClockwiseVector(dirPlayerToThis);
                     }
                 }
                 else if (positionPrevision.y <= -YAreaLimit) // Reach limit on the bottom
                 {
                     if (playerMoreLeftThanThis) // Player is at our left so we need to go counter clockwise
                     {
-                        direction = GetPerpendicularClockwiseVector(dirPlayerToThis);
+                        direction = GetPerpendicularCounterClockwiseVector(dirPlayerToThis);
                     }
                     else // Player is at our right so we need to go clockwise
                     {
