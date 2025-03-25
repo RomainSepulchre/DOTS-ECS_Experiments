@@ -4,7 +4,5 @@ namespace ECS.TargetAndSeekerDemo
 {
 	public struct Target : IComponentData
 	{
-
 	}
-
 }

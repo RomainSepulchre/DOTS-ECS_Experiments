@@ -5,6 +5,6 @@ namespace ECS.TargetAndSeekerDemo
 {
 	public struct Seeker : IComponentData
 	{
-
+		public Entity NearestTarget;
 	} 
 }
