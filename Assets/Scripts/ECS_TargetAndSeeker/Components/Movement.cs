@@ -7,6 +7,8 @@ namespace ECS.TargetAndSeekerDemo
     {
         public float Speed;
         public float3 Direction;
-        public float3 Timer;
+        public float Timer;
+        public float MinTimer;
+        public float MaxTimer;
     }
 }
