@@ -150,8 +150,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   objToSpawn: {fileID: 7420094215603496812, guid: dd0b501451220fc49b0d3676939f2d6c, type: 3}
   spawnAmount: 50000
-  xSpawnAreaLimit: 250
-  zSpawnAreaLimit: 250
+  xSpawnAreaLimit: 150
+  zSpawnAreaLimit: 85
 --- !u!4 &157625085
 Transform:
   m_ObjectHideFlags: 0
@@ -259,8 +259,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   objToSpawn: {fileID: 2789985686155106076, guid: 10bc7e7916250244da28bb85d0b25ceb, type: 3}
   spawnAmount: 50000
-  xSpawnAreaLimit: 250
-  zSpawnAreaLimit: 250
+  xSpawnAreaLimit: 150
+  zSpawnAreaLimit: 85
 --- !u!4 &496597427
 Transform:
   m_ObjectHideFlags: 0
