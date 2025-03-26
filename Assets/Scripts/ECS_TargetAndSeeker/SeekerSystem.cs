@@ -7,6 +7,12 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 
+// In burst compiled-code, generic job such as SortJob must be registered with [assembly: RegisterGenericJobType(typeof(MyJob<MyJobSpecialization>))]
+// [assembly: RegisterGenericJobType()] must always be put after the using and before the namespace or class declaration
+// In the case of sort there is 2 jobs two declare because sort job is decomposed in 2 jobs (SegmentSort and then SegmentSortMerge)
+// ! Sometime weird stuff happened like the demo suddenly working without these or another error popping in a system with no generic job for no reason but now with the 2 sortjobs declared it seems fine
+[assembly: RegisterGenericJobType(typeof(SortJob<float3, ECS.TargetAndSeekerDemo.XAxisComparer>.SegmentSort))]
+[assembly: RegisterGenericJobType(typeof(SortJob<float3, ECS.TargetAndSeekerDemo.XAxisComparer>.SegmentSortMerge))]
 namespace ECS.TargetAndSeekerDemo
 {
     [UpdateAfter(typeof(MovementSystem))]
@@ -30,7 +36,7 @@ namespace ECS.TargetAndSeekerDemo
             // TODO: find a way to keep the a sorted version of the entity arrays based on 
             NativeArray<Entity> targets = targetsQuery.ToEntityArray(Allocator.Temp);
 
-            NativeArray<float3> targetsPos = new NativeArray<float3>(targets.Length, Allocator.TempJob); // TODO: where do I dispose this with a job that depends on the system ?
+            NativeArray<float3> targetsPos = new NativeArray<float3>(targets.Length, Allocator.TempJob); // We use [DeallocateOnJobCompletion] in the job to deallocate this
             for (int i = 0; i < targetsPos.Length; i++)
             {
                 targetsPos[i] = SystemAPI.GetComponent<LocalTransform>(targets[i]).Position;
@@ -52,7 +58,8 @@ namespace ECS.TargetAndSeekerDemo
     [BurstCompile]
     public partial struct FindNearestTarget : IJobEntity
     {
-        [ReadOnly] public NativeArray<float3> TargetsPos;
+        // Note: There was no issue with [DeallocateOnJobCompletion], the issue was that in burst-compiled code generic job such as SortJob must be registered with [assembly: RegisterGenericJobType(typeof(SortJob<float3, XAxisComparer>))]
+        [ReadOnly, DeallocateOnJobCompletion] public NativeArray<float3> TargetsPos;
 
         public void Execute(ref Seeker seeker, in LocalTransform transform)
         {
