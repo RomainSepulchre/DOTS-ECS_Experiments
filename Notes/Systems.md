@@ -12,12 +12,14 @@ Summary:
 - [Iterate over components in Systems](#iterate-over-components-in-systems)
 - [Store data in systems](#store-data-in-systems)
 - [Optimize structural changes](#optimize-structural-changes)
+- [Working with managed data](#working-with-managed-data)
 
 Resources links:
 - [EntityComponentSystemSamples github repository](https://github.com/Unity-Technologies/EntityComponentSystemSamples/tree/master?tab=readme-ov-file)
 - [Document Unity Entities 101](https://docs.google.com/document/d/1R6E4IDpfLatwHITlCND0i5TuMVG0CMGsentFL-3RQT0/edit?tab=t.0)
 - [Unity entities systems video](https://www.youtube.com/watch?v=k07I-DpCcvE)
 - [Unity ECS Systems documentation](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/systems-intro.html)
+- [Unity Learn DOTS implementation and optimization](https://learn.unity.com/tutorial/part-3-2-managing-the-data-transformation-pipeline?uv=2022.3&courseId=60132919edbc2a56f9d439c3&projectId=6013255bedbc2a2e590fbe60#)
 
 ## System
 
@@ -551,6 +553,106 @@ state.EntityManager.CreateEntity(newEntityArchetype, entities);
 #### Use ComponentTypeSet to add/remove more than one component:
 
 Instead of adding or removing component one by one we can use a [`ComponentTypeSet`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.ComponentTypeSet.html). A `ComponentTypeSet` is a struct holding several components, it can be passed to `EntityManager` methods and replace the Component parameter (ex: `AddComponent(Entity, ComponentTypeSet)`, `RemoveComponent(Entity, ComponentTypeSet)`).
+
+## Working with managed data
+
+### Use SystemGroups to group managed data/main thread work
+
+When working with managed data, the work will need to run on the main thread. We usually need to read data from traditional OOP objects like `GameObjects` and `Monobehaviours` and write them into components. Then we work with this data in DOTS and we write back the result into the GameObjects representation.
+
+To avoid generating sync point in the middle of the `SimulationSystemGroup`, it's a good practice to group these systems together before and after running the rest of the `SimulationSystemGroup`.
+
+```C#
+// A group that runs right at the very beginning of SimulationSystemGroup
+// We can put all the system that need to read from managed data in this group
+[UpdateInGroup(typeof(SimulationSystemGroup), OrderFirst = true)] 
+[UpdateBefore(typeof(BeginSimulationEntityCommandBufferSystem))] 
+public partial class PreSimulationSystemGroup : ComponentSystemGroup { }
+
+// A group that runs right at the very end of SimulationSystemGroup
+// We can put all the system that need to write to managed data in this group
+[UpdateInGroup(typeof(SimulationSystemGroup), OrderLast = true)] 
+[UpdateAfter(typeof(EndSimulationEntityCommandBufferSystem))] 
+public partial class PostSimulationSystemGroup : ComponentSystemGroup { }
+
+// A system that need to read from managed data, placed in PreSimulationSystemGroup group (before everything in SimulationSystemGroup)
+[UpdateInGroup(typeof(PreSimulationSystemGroup))] 
+public partial class CopyManagedDataToECSSystem : SystemBase 
+{ 
+   // Copy data from managed objects (such as MonoBehaviours) into components 
+   protected override void OnUpdate() { } 
+} 
+
+[UpdateInGroup(typeof(SimulationSystemGroup))] 
+public partial struct ProcessDataSystem : ISystem 
+{ 
+   // Process the ECS simulation. 
+   public void OnUpdate(ref SystemState state) { } 
+} 
+
+// A system that need to write to managed data, placed in PostSimulationSystemGroup group (after everything in SimulationSystemGroup)
+[UpdateInGroup(typeof(PostSimulationSystemGroup))] 
+public partial struct CopyECSToManagedDataSystem : ISystem 
+{ 
+   // Copy processed data from components back into managed objects 
+   public void OnUpdate(ref SystemState state) { } 
+} 
+```
+
+### Separate C# from HPC#
+
+When we declare a managed `IComponentData` it is important to only keep reference to C# managed objects in it and not to mix managed object reference and HPC# objects. If we mix C# and HPC# in components, all the HPC# code will not be able take advantage of HPC# features such as Burst and Jobs.
+
+For example this component is managed so we can't use HPC# features with its int data:
+```c#
+// ! DON'T DO THIS 
+public class AnimState : IComponentData
+{
+   public Animator Animator; // An Animator component on a GameObject
+   public int stateId; // Can't use HPC# features when dealing with this data
+}
+```
+
+Instead, we should separate the managed and unmanaged data in two separate components:
+```c#
+// DO THIS, SEPARATE ANIMATOR (reference to C# object) AND INT (compatible with HPC# code)
+public class AnimatorRef : IComponentData // managed component
+{
+   public Animator Animator; // An Animator component on a GameObject
+}
+
+public struct AnimStateId : IComponentData
+{
+   public int stateId;
+}
+
+// Then we can process the managed component in a dedicated system on the main thread and keep processing the unmanaged component with HPC# features
+
+public partial struct AnimStateSystem : ISystem
+{
+   [BurstCompile] // Compatible with Burst Compilation
+   public void OnUpdate(ref SystemState state)
+   {
+       // Get Entity with AnimStateId Component and start a job to process them...
+   }
+}
+
+[UpdateInGroup(typeof(PostSimulationSystemGroup))] // Run the system in a specific group at the end SimulationSystemGroup of to prevent sync points
+public partial struct AnimatorRefSystem : ISystem
+{
+   public void OnUpdate(ref SystemState state)
+   {
+        // Process code on the main thread for the managed component 
+       foreach (var (animStateId, animatorRef) in SystemAPI.Query<RefRO<AnimStateId>, AnimatorRef>())
+       {
+           animatorRef.Animator.SetInteger("State", animStateId);
+       }
+   }
+}
+```
+
+We can then keep
+
 
 
 

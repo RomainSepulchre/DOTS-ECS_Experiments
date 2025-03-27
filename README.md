@@ -25,6 +25,7 @@
     - [SystemAPI](Notes/Systems.md#systemapi)
     - [Store data in systems](Notes/Systems.md#store-data-in-systems)
     - [Optimize structural changes](Notes/Systems.md#optimize-structural-changes)
+    - [Working with managed data](Notes/Systems.md#working-with-managed-data)
 - [Components](Notes/Components.md)
     - [What is a component ?](Notes/Components.md#what-is-a-component-)
     - [Types of components](Notes/Components.md#types-of-components)
