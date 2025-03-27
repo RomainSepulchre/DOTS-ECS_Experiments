@@ -607,9 +607,11 @@ public partial struct MyJobEntity : IJobEntity
 
 ## Use generic job in burst-compiled code
 
-Current Burst documentation on generic jobs limitation: https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-generic-jobs.html
+Current Burst documentation on generic jobs limitation: https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-generic-jobs.html  
+Forum post about this: https://discussions.unity.com/t/sortjob-generic-jobs-in-burst/1521407  
+Old generic jobs with entities documentation: https://docs.unity3d.com/Packages/com.unity.entities@0.17/manual/ecs_generic_jobs.html  
 
-*** The solution below seems old, I can't find recent documentation on `[assembly: RegisterGenericJobType()]` maybe there is a more recent solution ? ***
+***The solution below seems old, I can't find recent documentation on `[assembly: RegisterGenericJobType()]` maybe there is a more recent solution ? Is my issue just related to the use of SortJob ? In the old doc they say "When you instantiate a concrete specialization of a generic job directly, the specialization is automatically registered in the assembly:" so it should'nt be an issue with a generic job declared with its specialization***
 
 If we need to use a generic job such as [`SortJob`](https://docs.unity3d.com/Packages/com.unity.collections@1.4/api/Unity.Collections.SortJob-2.html) in burst compiled code we need to register it with `[assembly: RegisterGenericJobType(typeof(MyJob<JobArgumentTypes>))]` attribute.
 
