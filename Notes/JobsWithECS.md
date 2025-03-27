@@ -615,10 +615,10 @@ If we need to use a generic job such as [`SortJob`](https://docs.unity3d.com/Pac
 
 Since it use the `assembly` keyword, the `[assembly: RegisterGenericJobType(typeof(MyJob<JobArgumentTypes>))]` attribute must be placed at the top of the file just after the using and before a namespace or class/struct declaration.
 
-> **`SortJob` has the specificity of being a job composed of 2 single jobs: `SortJob.SegmentSort` and `SortJob.SegmentSortMerge` so we must register those 2 jobs with the attribute and not just `SortJob`.**
+> **`SortJob` is not exactly a job but an extension method calling 2 different job types: `SortJob.SegmentSort` and `SortJob.SegmentSortMerge` so we must register those 2 jobs with the attribute and not just `SortJob`.**
 
 ```c#
-// SortJob is a special case, it is composed of two jobs so these two jobs must be declared and not just SortJob
+// SortJob is a special case, it is an extansion method that calls two distinct jobs, so they both must be declared
 [assembly: RegisterGenericJobType(typeof(SortJob<int, NativeSortExtension.DefaultComparer<int>>.SegmentSort))] // Register SortJob.SegmentSort
 [assembly: RegisterGenericJobType(typeof(SortJob<int, NativeSortExtension.DefaultComparer<int>>.SegmentSortMerge))] // Register SortJob.SegmentSortMerge
 namespace Namespace.Example
@@ -651,22 +651,19 @@ It's also possible to use a custom `IComparer` but if it's the case we need to a
 [assembly: RegisterGenericJobType(typeof(SortJob<int, MyComparer>.SegmentSort))]
 [assembly: RegisterGenericJobType(typeof(SortJob<int, MyComparer>.SegmentSortMerge))]
 
-namespace Namespace.Example
+public partial struct MySystem : ISystem
 {
-    public partial struct MySystem : ISystem
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
     {
-        [BurstCompile]
-        public void OnUpdate(ref SystemState state)
-        {
-            // Create a int array that we need to sort for a later use in the system ...
-            // ...same as previous example
+        // Create a int array that we need to sort for a later use in the system ...
+        // ...same as previous example
 
-            // We provide a custom comparer when we declare the job
-            SortJob<int, MyComparer> sortJob = intsArray.SortJob(new MyComparer());
+        // We provide a custom comparer when we declare the job
+        SortJob<int, MyComparer> sortJob = intsArray.SortJob(new MyComparer());
 
-            // Schedule the job and do something with the sorted array ...
-        }
-    }   
-}
+        // Schedule the job and do something with the sorted array ...
+    }
+}   
 ```
 
