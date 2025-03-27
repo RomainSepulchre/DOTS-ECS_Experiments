@@ -5,10 +5,6 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
-using Unity.VisualScripting;
-using UnityEngine;
-using UnityEngine.ProBuilder.Shapes;
-using UnityEngine.SocialPlatforms;
 
 namespace ECS.ECSExperiments
 {
