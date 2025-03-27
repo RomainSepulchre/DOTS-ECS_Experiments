@@ -57,6 +57,10 @@ namespace ECS.TargetAndSeekerDemo
             };
 
             state.Dependency = findNearestTarget.ScheduleParallel(sortJobHandle);
+
+            // Dispose the array when the jobHandle is complete
+            // -> We could also use [DeallocateOnJobCompletion] when declaring the array inside the job but this is less recommended        
+            targetsWithPos.Dispose(state.Dependency);
         }
     }
 
@@ -64,7 +68,7 @@ namespace ECS.TargetAndSeekerDemo
     public partial struct FindNearestTarget : IJobEntity
     {
         // Note: There was no issue with [DeallocateOnJobCompletion], the issue was that in burst-compiled code generic job such as SortJob must be registered with [assembly: RegisterGenericJobType(typeof(SortJob<float3, XAxisComparer>))]
-        [ReadOnly, DeallocateOnJobCompletion] public NativeArray<EntityWithPosition> TargetsWithPos;
+        [ReadOnly] public NativeArray<EntityWithPosition> TargetsWithPos;
 
         public void Execute(ref Seeker seeker, in LocalTransform transform, Entity entity)
         {

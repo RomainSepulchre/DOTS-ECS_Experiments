@@ -589,7 +589,41 @@ The number of worker used by the application can be configured by setting `JobUt
 
 When using a temporary allocated native array in an ECS job, if we don't wait for the job to complete in the system (which is often the case since it's preferable to schedule the job as a dependency of the system to complete it parrallely from other system) we have no direct way to deallocate the native container because we can't know when the job will complete and we don't have any callback when it's the case.
 
-To prevent memory leak and correctly dispose the native container, we can use `[DeallocateOnJobCompletion]` attribute. When using this attribute on a `NativeContainer` declared in the job, the `NativeContainer` is automatically disposed when the job complete.
+To prevent memory leak and correctly dispose the native container, we have two possibilities:
+1. Pass a job handle when we call dispose on our NativeContainer
+2. *Less recommended (Only works with NativeArray and might be deprecated)*: Use the `[DeallocateOnJobCompletion]` attribute
+
+### Pass a job handle when calling dispose 
+
+```c#
+public partial struct MySystem : ISystem
+{
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        // Create a int array we will pass in the job
+        NativeArray<int> intArray = new new NativeArray<int>(1000, Allocator.TempJob);
+
+        MyJob job = new MyJob()
+        {
+            IntArray = intArray
+        };
+
+        // Schedule the job and assign it to system dependency
+        state.Dependency = job.schedule(state.Dependency);
+
+        // Call Dispose on the NativeArray and pass a jobHandle as dependency (here its state.Dependency), the array will be disposed when the jobHandle complete
+        intArray.Dispose(state.Dependency);
+    }
+}
+
+```
+
+### Use [DeallocateOnJobCompletion]
+
+> **! This solution not recommended, it only works with `NativeArray` and unity plans to deprecate it in future updates**
+
+For `NativeArray`, we can use `[DeallocateOnJobCompletion]` attribute inside a job when we declare the array. When using this attribute, the `NativeArray` is automatically disposed when the job complete and we don't need to manually call `Dispose()` in the system. However, this only works with `NativeArray` and not with every `NativeContainer`.
 
 ```c#
 [BurstCompile]
@@ -637,7 +671,7 @@ namespace Namespace.Example
                 intsArray[i] = UnityEngine.Random.Range(0, int.MaxValue); // Assign a random int value
             }
 
-            // We use the default int comparer from Unity.Collextions
+            // We use the default int comparer from Unity.Collections
             SortJob<int, NativeSortExtension.DefaultComparer<int>> sortJob = intsArray.SortJob();
 
             // Schedule the job and do something with the sorted array ...
