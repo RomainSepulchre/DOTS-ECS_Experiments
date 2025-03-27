@@ -10,6 +10,8 @@ Summary:
 - [ComponentLookUp<T>](#componentlookup)
 - [Entity command buffer](#entity-command-buffer)
 - [Job scheduling overhead](#job-scheduling-overhead)
+- [NativeContainer deallocation with ECS Jobs](#nativecontainer-deallocation-with-ecs-jobs)
+- [Use generic job in burst-compiled code](#use-generic-job-in-burst-compiled-code)
 
 Resources links:
 - [EntityComponentSystemSamples github repository](https://github.com/Unity-Technologies/EntityComponentSystemSamples/tree/master?tab=readme-ov-file)
@@ -362,7 +364,7 @@ A `ComponentLookUp<T>` can be passed to a job by defining a public field for it 
 
 Like any other naative container in a job, `ComponentLookUp<T>` or `BufferLookup<T>` should be marked as `[ReadOnly]` when we only need to read the components (or dynamic buffers).
 
-It's possible to safely access read-only `ComponentLookUp<T>` in any job. However, by default, it's not possible to write in a `ComponentLookUp<T>` in parallel jobs (including `IJobEntity`, `Entities.Foreach` and `IJobChunk`). When we are sure two instances of the parallel job cannot write the same index, we can use `[NativeDisableParallelForRestriction]` attribute on the `ComponentLookUp<T>` field to remove the restriction.
+It's possible to safely access read-only `ComponentLookUp<T>` in any job. However, by default, it's not possible to write in a `ComponentLookUp<T>` in parallel jobs (including `IJobEntity`, `Entities.Foreach` and `IJobChunk`). **When we are sure two instances of the parallel job cannot write the same index, we can use `[NativeDisableParallelForRestriction]` attribute on the `ComponentLookUp<T>` field to remove the restriction.**
 
 To check if an entity has the component of type *T*, `ComponentLookUp<T>` has 2 methods:
 - `HasComponent()`: return true if the specified entity has the component of type *T*.
@@ -582,4 +584,89 @@ If one of these situations applies, avoid using the job system by using an idiom
 ### Configure job worker count
 
 The number of worker used by the application can be configured by setting `JobUtility.JobWorkerCount`. The number of worker thread used must enough to perform the work required without introducing CPU bottlenecks and less than introducing thread spending a lot of time idle. Use the profiler to test the change.
+
+## NativeContainer deallocation with ECS Jobs
+
+When using a temporary allocated native array in an ECS job, if we don't wait for the job to complete in the system (which is often the case since it's preferable to schedule the job as a dependency of the system to complete it parrallely from other system) we have no direct way to deallocate the native container because we can't know when the job will complete and we don't have any callback when it's the case.
+
+To prevent memory leak and correctly dispose the native container, we can use `[DeallocateOnJobCompletion]` attribute. When using this attribute on a `NativeContainer` declared in the job, the `NativeContainer` is automatically disposed when the job complete.
+
+```c#
+[BurstCompile]
+public partial struct MyJobEntity : IJobEntity
+{
+    //  With [DeallocateOnJobCompletion], PositionsArray NativeArray will automatically be disposed when the MyJobEntity is completed
+    [ReadOnly, DeallocateOnJobCompletion] public NativeArray<float3> PositionsArray;
+
+    public void Execute(ref ComponentA compA, in LocalTransform transform)
+    {
+        // Do something
+    }
+}
+```
+
+## Use generic job in burst-compiled code
+
+Current Burst documentation on generic jobs limitation: https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-generic-jobs.html
+
+*** The solution below seems old, I can't find recent documentation on `[assembly: RegisterGenericJobType()]` maybe there is a more recent solution ? ***
+
+If we need to use a generic job such as [`SortJob`](https://docs.unity3d.com/Packages/com.unity.collections@1.4/api/Unity.Collections.SortJob-2.html) in burst compiled code we need to register it with `[assembly: RegisterGenericJobType(typeof(MyJob<JobArgumentTypes>))]` attribute.
+
+Since it use the `assembly` keyword, the `[assembly: RegisterGenericJobType(typeof(MyJob<JobArgumentTypes>))]` attribute must be placed at the top of the file just after the using and before a namespace or class/struct declaration.
+
+> **`SortJob` has the specificity of being a job composed of 2 single jobs: `SortJob.SegmentSort` and `SortJob.SegmentSortMerge` so we must register those 2 jobs with the attribute and not just `SortJob`.**
+
+```c#
+// SortJob is a special case, it is composed of two jobs so these two jobs must be declared and not just SortJob
+[assembly: RegisterGenericJobType(typeof(SortJob<int, NativeSortExtension.DefaultComparer<int>>.SegmentSort))] // Register SortJob.SegmentSort
+[assembly: RegisterGenericJobType(typeof(SortJob<int, NativeSortExtension.DefaultComparer<int>>.SegmentSortMerge))] // Register SortJob.SegmentSortMerge
+namespace Namespace.Example
+{
+    public partial struct MySystem : ISystem
+    {
+        [BurstCompile]
+        public void OnUpdate(ref SystemState state)
+        {
+            // Create a int array that we need to sort for a later use in the system
+            NativeArray<int> intsArray= new new NativeArray<int>(1000, Allocator.TempJob);
+            for (int i = 0; i < intsArray.Length; i++)
+            {
+                intsArray[i] = UnityEngine.Random.Range(0, int.MaxValue); // Assign a random int value
+            }
+
+            // We use the default int comparer from Unity.Collextions
+            SortJob<int, NativeSortExtension.DefaultComparer<int>> sortJob = intsArray.SortJob();
+
+            // Schedule the job and do something with the sorted array ...
+        }
+    }
+}
+```
+
+It's also possible to use a custom `IComparer` but if it's the case we need to adapt the `[assembly: RegisterGenericJobType()]` attribute with the correct comparer:
+
+```c#
+// We provide our custom comparer rather than the default comparer in the attribute
+[assembly: RegisterGenericJobType(typeof(SortJob<int, MyComparer>.SegmentSort))]
+[assembly: RegisterGenericJobType(typeof(SortJob<int, MyComparer>.SegmentSortMerge))]
+
+namespace Namespace.Example
+{
+    public partial struct MySystem : ISystem
+    {
+        [BurstCompile]
+        public void OnUpdate(ref SystemState state)
+        {
+            // Create a int array that we need to sort for a later use in the system ...
+            // ...same as previous example
+
+            // We provide a custom comparer when we declare the job
+            SortJob<int, MyComparer> sortJob = intsArray.SortJob(new MyComparer());
+
+            // Schedule the job and do something with the sorted array ...
+        }
+    }   
+}
+```
 
