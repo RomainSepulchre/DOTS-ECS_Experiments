@@ -14,6 +14,7 @@ Resources links:
 - [Document Unity Entities 101](https://docs.google.com/document/d/1R6E4IDpfLatwHITlCND0i5TuMVG0CMGsentFL-3RQT0/edit?tab=t.0)
 - [Unity entities video](https://www.youtube.com/watch?v=jzCEzNoztzM)
 - [Unity ECS concept documentation](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/components-intro.html)
+- [Reference component types with Burst](https://nagachiang.github.io/unity-dots-how-to-reference-types-with-unmanaged-code/)
 
 ## What is a [component](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/concepts-components.html) ?
 

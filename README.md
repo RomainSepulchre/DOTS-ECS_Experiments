@@ -45,6 +45,8 @@
     - [ComponentLookUp<T>](Notes/JobsWithECS.md#componentlookup)
     - [Entity command buffer](Notes/JobsWithECS.md#entity-command-buffer)
     - [Job scheduling overhead](Notes/JobsWithECS.md#job-scheduling-overhead)
+    - [NativeContainer deallocation with ECS Jobs](Notes/JobsWithECS.md#nativecontainer-deallocation-with-ecs-jobs)
+    - [Use generic job in burst-compiled code](Notes/JobsWithECS.md#use-generic-job-in-burst-compiled-code)
 - [Other Notes](Notes/OtherNotes.md)
     - [Array binary search](Notes/OtherNotes.md#array-binary-search)
     - [Comparer, IComparer<T> interfaces](Notes/OtherNotes.md#icomparer-icomparer-comparer-and-icomparable)
