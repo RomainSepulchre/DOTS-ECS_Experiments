@@ -207,6 +207,11 @@ A shared component group the entities in chunks based on the value of the compon
 
 It's possible to create both managed and unmanaged shared components but managed shared components keep all the disadvantages of regular managed components.
 
+To make sure we are correctly using a shared component, we can check if these 3 statements are true:
+1. It is useful for the system to operate on individual subgroups.
+2. There is a comparatively small number of these subgroups.
+3. The memory saved by using shared components rather than standard components is greater than the memory that is lost by creating more archetypes
+
 Implement the `ISharedComponentData` interface to create a shared component:
 
 ```c#
