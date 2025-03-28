@@ -15,6 +15,7 @@ Resources links:
 - [Unity entities video](https://www.youtube.com/watch?v=jzCEzNoztzM)
 - [Unity ECS concept documentation](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/components-intro.html)
 - [Reference component types with Burst](https://nagachiang.github.io/unity-dots-how-to-reference-types-with-unmanaged-code/)
+- [Unity Learn DOTS: Minimizing cache misses (Set DynamicBuffer capacity)] (https://learn.unity.com/tutorial/part-3-3-minimizing-cache-misses?uv=2022.3&courseId=60132919edbc2a56f9d439c3&projectId=6013255bedbc2a2e590fbe60#639b103aedbc2a77eadf4453)
 
 ## What is a [component](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/concepts-components.html) ?
 
@@ -56,6 +57,15 @@ Allowed field types in a component:
 ## Types of components
 
 This section won't be exhaustive, there are many differents types of component with different purpose. The complete list of component types and how to use them can be found [here](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/components-type.html).
+
+- [Tag Component](#tag-component)
+- [DynamicBuffer Component](#dynamicbuffer-component)
+- [Managed Component](#managed-components)
+- [Shared Component](#shared-components)
+- [Enableable Component](#enableable-components)
+- [Singleton component](#singleton-components)
+- [Cleanup component](#cleanup-component)
+- [Chunk component](#chunk-component)
 
 ### Tag component
 
@@ -105,6 +115,30 @@ The `EntityManager` has key methods for dynamic buffers:
 - **`Add()`:** Adds an element to the end of the buffer, resizing it if necessary.
 - **`Insert()`:** Inserts an element at a specified index, resizing if necessary.
 - **`RemoveAt()`:** Removes the element at a specified index.
+
+#### Set the size of a dynamic buffer
+
+When creating a `DynamicBuffer`, the default capacity is calculated using [`(TypeManager.DefaultBufferCapacityNumerator / sizeOf(typeStoredInTheBuffer)`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.TypeManager.DefaultBufferCapacityNumerator.html). The default value of `TypeManager.DefaultBufferCapacityNumerator` is set to 128, so with a `DynamicBuffer` of `int` we the default will of 32 ints (a int has a size of 4 bytes: 128/4 = 32).
+
+If we approximately know how many elements should be stored in the `DynamicBuffer`, we can define its initial capacity ourself by using [`[InternalBufferCapacity()]` attribute](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.InternalBufferCapacityAttribute.html).
+
+```C#
+[InternalBufferCapacity(42)] // We set the default buffer capacity to 42 ints, if a 43th element is added the buffer will be rellocated elsewhere in the memory
+public struct MyDynamicBufferComponent : IBufferElementData
+{
+    public int Value;
+}
+```
+
+As long as the buffer stays smaller than its initial capacity, the buffer content stays in the initial chunk(s) and doesn't need to be reallocated in a larger array somewhere else in the memory. That's why it's so important to correctly define the initial capacity of a `DynamicBuffer`, it prevents a reallocation and all the problems it introduce: *adding a new element force to copy the existing elements in a new location which take computation time, all future attempts to access the buffer result in a cache miss, it contributes to chunks fragmentation since it leaves an empty chunk that persist as long as the buffer exist*.
+
+#### Dynamically resize a buffer
+
+In a case where it's not possible to predict a correct size for the buffer and we add item one by one, we will have a problematic situation: once the buffer has reached its initial capacity, every time we will have add a new item we will reach its new capacity which means we need to make a new allocation everytime we add a new item.
+
+To avoid this situation we can use [`DynamicBufffer.EnsureCapacity()`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.DynamicBuffer-1.EnsureCapacity.html#Unity_Entities_DynamicBuffer_1_EnsureCapacity_System_Int32_) to increase the buffer capacity and reallocate once the buffer into a bigger memory block rather than doing every time we add a new element.
+
+On the contrary if the capacity of a `DynamicBuffer` has been increased too much and now takes slots of memory than are no longer needed its possibly reduce the buffer capacity with [`DynamicBuffer.TrimExcess()`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.DynamicBuffer-1.TrimExcess.html#Unity_Entities_DynamicBuffer_1_TrimExcess). The capacity of the buffer will be reduce to its current length and the data will be reallocated in a smaller memory block. **If the buffer fits back in the chunk reserved for it initial capacity, the content is moved back in the chunk rather than staying allocated somewhere else in the memory.**
 
 ### Managed Components
 
