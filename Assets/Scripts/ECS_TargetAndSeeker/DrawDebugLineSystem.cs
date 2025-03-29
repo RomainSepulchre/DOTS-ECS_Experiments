@@ -7,25 +7,44 @@ using Unity.Profiling;
 using Unity.Transforms;
 using UnityEngine;
 
-[UpdateAfter(typeof(SeekerSystem))]
-public partial struct DrawDebugLineSystem : ISystem
+namespace ECS.TargetAndSeekerDemo
 {
-    EntityQuery seekersQuery;
-
-    [BurstCompile]
-    public void OnCreate(ref SystemState state)
+    [UpdateAfter(typeof(SeekerSystem))]
+    public partial struct DrawDebugLineSystem : ISystem
     {
-        seekersQuery = SystemAPI.QueryBuilder().WithAllRW<Seeker>().Build();
-        state.RequireForUpdate(seekersQuery);
+        EntityQuery seekersQuery;
+
+        [BurstCompile]
+        public void OnCreate(ref SystemState state)
+        {
+            seekersQuery = SystemAPI.QueryBuilder().WithAllRW<Seeker>().Build();
+            state.RequireForUpdate(seekersQuery);
+        }
+
+        [BurstCompile]
+        public void OnUpdate(ref SystemState state)
+        {
+            // Draw debug line on main thread
+            //foreach (var (seeker, transform) in SystemAPI.Query<RefRO<Seeker>, RefRO<LocalTransform>>())
+            //{
+            //    float3 seekerPos = transform.ValueRO.Position;
+            //    Debug.DrawLine(seekerPos, seeker.ValueRO.NearestTargetPos, Color.white);
+            //}
+
+            // TODO: This could be moved in SeekerSystem ?? 
+            // Draw debug line using a job
+            DrawDebugLineJob drawDebugLineJob = new DrawDebugLineJob();
+            state.Dependency = drawDebugLineJob.ScheduleParallel(state.Dependency);
+        }
     }
 
     [BurstCompile]
-    public void OnUpdate(ref SystemState state)
+    public partial struct DrawDebugLineJob : IJobEntity
     {
-        foreach (var (seeker, transform) in SystemAPI.Query<RefRO<Seeker>, RefRO<LocalTransform>>())
+        public void Execute(in Seeker seeker, in LocalTransform transform)
         {
-            float3 seekerPos = transform.ValueRO.Position;
-            Debug.DrawLine(seekerPos, seeker.ValueRO.NearestTargetPos, Color.white);
+            float3 seekerPos = transform.Position;
+            Debug.DrawLine(seekerPos, seeker.NearestTargetPos, Color.white);
         }
     }
 }
