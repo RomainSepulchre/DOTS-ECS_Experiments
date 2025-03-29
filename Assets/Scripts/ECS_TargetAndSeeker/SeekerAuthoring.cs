@@ -28,7 +28,8 @@ namespace ECS.TargetAndSeekerDemo
                 MaxTimer = authoring.maxTimer,
             };
             AddComponent(entity, newMovement);
+
+            AddBuffer<LastPositions>(entity);
         }
     }
-
 }

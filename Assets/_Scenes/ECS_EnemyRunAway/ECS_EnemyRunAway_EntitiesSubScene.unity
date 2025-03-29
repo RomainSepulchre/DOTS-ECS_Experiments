@@ -236,7 +236,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyToSpawn: {fileID: 6892550731456997621, guid: 1d4c49b468cae574abf2ef3fe4e41980, type: 3}
   player: {fileID: 869557949}
-  spawnAmount: 1000
+  spawnAmount: 100000
   spawnAreaXLimit: 10.1
   spawnAreaYLimit: 5.6
 --- !u!4 &866292768
