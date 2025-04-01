@@ -67,7 +67,9 @@ When using burst you should use *Unity.Mathematics* package types and API for ma
 
 **This is especially important to remember when working with matrix types**.
  
->For example when multiplying two `Matrix4x4` with `Matrix4x4.operator *`, the result is a standard matrix multiplication: each element of the resulting matrix is the dot product of the rows and columns.
+For example if we have those 2 matrices:
+
+- Matrix A:
 
 $$
 \begin{pmatrix}
@@ -78,6 +80,8 @@ $$
 \end{pmatrix}
 $$
 
+- Matrix B:
+
 $$
 \begin{pmatrix}
   a & b & c & a \\
@@ -86,6 +90,12 @@ $$
   a & a & a & a
 \end{pmatrix}
 $$
+
+when multiplying two `Matrix4x4` with `Matrix4x4.operator *`, the result is a standard matrix multiplication: each element of the resulting matrix is the dot product of the rows and columns.
+
+
+
+
 
 $$
 \begin{pmatrix}
