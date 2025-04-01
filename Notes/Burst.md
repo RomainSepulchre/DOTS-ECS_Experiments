@@ -73,10 +73,10 @@ For example if we have those 2 matrices:
 
 $$
 \begin{pmatrix}
-  3 & 5 & 6 & 7 \\
-  2 & 6 & 1 & 2 \\
-  6 & 9 & 1 & 3 \\
-  4 & 5 & 2 & 4
+  3 & 2 & 6 & 4 \\
+  5 & 6 & 9 & 5 \\
+  6 & 1 & 1 & 2 \\
+  7 & 2 & 3 & 4
 \end{pmatrix}
 $$
 
@@ -84,30 +84,40 @@ $$
 
 $$
 \begin{pmatrix}
-  a & b & c & a \\
-  d & e & f & a \\
-  g & h & i & a \\
-  a & a & a & a
+  1 & 6 & 1 & 7 \\
+  4 & 3 & 4 & 8 \\
+  9 & 2 & 5 & 4 \\
+  5 & 2 & 6 & 1
 \end{pmatrix}
 $$
 
-when multiplying two `Matrix4x4` with `Matrix4x4.operator *`, the result is a standard matrix multiplication: each element of the resulting matrix is the dot product of the rows and columns.
+When multiplying two `Matrix4x4` with `Matrix4x4.operator *`, the result is a standard matrix multiplication: each element of the resulting matrix is the dot product of the rows and columns.
 
-
-
-
+- Matrix4x4 A * Matrix4x4 B: 
 
 $$
 \begin{pmatrix}
-  a & b & c & a \\
-  d & e & f & a \\
-  g & h & i & a \\
-  a & a & a & a
+  88 & 107 & 95 & 68 \\
+  53 & 46 & 43 & 30 \\
+  82 & 79 & 89 & 87 \\
+  64 & 71 & 72 & 46
 \end{pmatrix}
 $$
 
->However, when multiplying two `float4x4` with `float4x4.operator *`, the operator does a component-wise operation (ex: for the second element of the first column result[0,1] = a[0,1] * b[0,1]) . To do a standard matrix multiplication we should use `math.mull()`.
+However, when multiplying two `float4x4` with `float4x4.operator *`, the operator does a component-wise operation. To do a standard matrix multiplication we should use `math.mull()`.
 
+- float4x4 A * float4x4 B: 
+
+$$
+\begin{pmatrix}
+  3 & 20 & 54 & 35 \\
+  12 & 18 & 2 & 4 \\
+  6 & 36 & 5 & 18 \\
+  28 & 40 & 8 & 4
+\end{pmatrix}
+$$
+
+### Random with Unity.Mathematics
 
 
 ## Other burst features
