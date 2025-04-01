@@ -1,3 +1,4 @@
+using BurstExperience;
 using ECS.TargetAndSeekerDemo;
 using Unity.Burst;
 using Unity.Collections;
@@ -6,6 +7,7 @@ using Unity.Mathematics;
 using Unity.Profiling;
 using Unity.Transforms;
 using UnityEngine;
+
 
 namespace ECS.TargetAndSeekerDemo
 {
@@ -34,7 +36,7 @@ namespace ECS.TargetAndSeekerDemo
             // TODO: This could be moved in SeekerSystem ?? 
             // Draw debug line using a job
             DrawDebugLineJob drawDebugLineJob = new DrawDebugLineJob();
-            state.Dependency = drawDebugLineJob.ScheduleParallel(state.Dependency);
+            state.Dependency = drawDebugLineJob.ScheduleParallel(state.Dependency);       
         }
     }
 
