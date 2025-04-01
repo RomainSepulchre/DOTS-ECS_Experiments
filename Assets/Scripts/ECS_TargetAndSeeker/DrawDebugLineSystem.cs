@@ -1,4 +1,4 @@
-using BurstExperience;
+using Burst.Experiments;
 using ECS.TargetAndSeekerDemo;
 using Unity.Burst;
 using Unity.Collections;

@@ -2,7 +2,7 @@ using Unity.Mathematics;
 using Unity.Profiling;
 using UnityEngine;
 
-namespace BurstExperience
+namespace Burst.Experiments
 {
     public class CallBurstCompiledCode : MonoBehaviour
     {

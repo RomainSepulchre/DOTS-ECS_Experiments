@@ -4,7 +4,7 @@ using Unity.Profiling;
 using UnityEngine;
 
 
-namespace BurstExperience
+namespace Burst.Experiments
 {
     [BurstCompile]
     public static class BurstCompiledUtilities
