@@ -25,7 +25,32 @@ namespace Burst.Experiments
         }
 
         // TODO: Compare speed between burst-compiled and non-burstcompiled
-        // => Pretty similar with simple operation, try a bigger operation (ex: loop with high number of iteration)
+        // => Pretty similar with simple operation, but the performance impact is really visible for more complex operation (.001ms vs .01ms with a loop of 1000 iteration)
+
+        [BurstCompile]
+        public static void BurstCompiled_MultiplyAddLoop(in float3 mula, in float3 mulb, in float3 add, out float3 result)
+        {
+            ProfilerMarker multAddMarker = new ProfilerMarker("Marker_BurstCompiled_MultiplyAddLoop");
+            multAddMarker.Begin();
+            result = mula * mulb;
+            for (int i = 0; i < 1000; i++)
+            {
+                result += add;
+            }
+            multAddMarker.End();
+        }
+
+        public static void NonBurstCompiled_MultiplyAddLoop(in float3 mula, in float3 mulb, in float3 add, out float3 result)
+        {
+            ProfilerMarker multAddMarker = new ProfilerMarker("Marker_NonBurstCompiled_MultiplyAddLoop");
+            multAddMarker.Begin();
+            result = mula * mulb;
+            for (int i = 0; i < 1000; i++)
+            {
+                result += add;
+            }
+            multAddMarker.End();
+        }
 
         // Code is burst compiled when checking IsBursted and Burst Inspector, however method has not the green burst compiled color when profiling
         [BurstCompile]

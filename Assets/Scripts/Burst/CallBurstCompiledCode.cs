@@ -18,6 +18,9 @@ namespace Burst.Experiments
             float3 posA = aTransform.position;
             float3 posB = bTransform.position;
             float3 posC = cTransform.position;
+
+            BurstCompiledUtilities.BurstCompiled_MultiplyAddLoop(posA, posB, posC, out float3 burstResult);
+            BurstCompiledUtilities.NonBurstCompiled_MultiplyAddLoop(posA, posB, posC, out float3 nonBurstResult);
             
             BurstCompiledUtilities.BurstCompiled_MultiplyAdd(in posA, in posB, in posC, out float3 multAddResultBurst);
             BurstCompiledUtilities.NonBurstCompiled_MultiplyAdd(in posA, in posB, in posC, out float3 multAddResult);
@@ -26,7 +29,7 @@ namespace Burst.Experiments
             BurstCompiledUtilities.BurstCompiled_MultiplySub(in posA, in posB, in posC, out float3 multSubResultBurst);
 
 
-            Debug.Log($"Burst MultiplyAdd result:{multAddResultBurst}, MultiplySub result:{multSubResultBurst}; NonBurst MultiplyAdd result:{multAddResult}, MultiplySub result:{multSubResult}");
+            Debug.Log($"Loop burst : {burstResult}, non burst: {nonBurstResult} ; Burst MultiplyAdd result:{multAddResultBurst}, MultiplySub result:{multSubResultBurst}; NonBurst MultiplyAdd result:{multAddResult}, MultiplySub result:{multSubResult}");
         }
     } 
 }
