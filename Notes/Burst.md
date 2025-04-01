@@ -104,6 +104,8 @@ $$
 \end{pmatrix}
 $$
 
+> The result for the first element is dot product of A first column and B first row: C[0,0] = (3,5,6,7) . (1,6,1,7) = 3*1 + 5*6 + 6*1 + 7*7 = 88.
+
 However, when multiplying two `float4x4` with `float4x4.operator *`, the operator does a component-wise operation. To do a standard matrix multiplication we should use `math.mull()`.
 
 - float4x4 A * float4x4 B: 
@@ -116,6 +118,8 @@ $$
   28 & 40 & 8 & 4
 \end{pmatrix}
 $$
+
+> The result for the first element is A first element multiplied by B first element: C[0,0] = A[0,0] * B[0,0] = 3 * 1 = 3.
 
 ### Random with Unity.Mathematics
 
