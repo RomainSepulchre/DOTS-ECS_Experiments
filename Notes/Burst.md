@@ -57,6 +57,45 @@ For example, in a job with `[BurstCompile]` attribute only the `Execute()` metho
 
 https://learn.unity.com/tutorial/part-3-4-getting-the-most-out-of-burst?uv=2022.3&courseId=60132919edbc2a56f9d439c3&projectId=6013255bedbc2a2e590fbe60#
 
+### Unity.Mathematics
+
+When using burst you should use *Unity.Mathematics* package types and API for mathematics operations instead of using the traditional `Mathf` API. The package has its own mathematics types (ex: `float3` instead of `Vector3`, `quaternion` instead of `Quaternion`, `float4x4` instead of `Matrix4x4`) that are optimized for burst and form the basis of Burst SIMD optimizations.
+
+#### Unity.Mathematics operators
+
+**It's important to be aware that the arithmetic operators of *Unity.Mathematics* doesn't necessarily behave like the operators for *UnityEngine* types**. With SIMD types like `float3` or `float4x4` almost every operators are applied in a component-wise manner, its might not be the case with `UnityEngine` types.
+
+**This is especially important to remember when working with matrix types**.
+ 
+>For example when multiplying two `Matrix4x4` with `Matrix4x4.operator *`, the result is a standard matrix multiplication: each element of the resulting matrix is the dot product of the rows and columns.
+$$
+\begin{pmatrix}
+  3 & 5 & 6 & 7 \\
+  2 & 6 & 1 & 2 \\
+  6 & 9 & 1 & 3 \\
+  4 & 5 & 2 & 4
+\end{pmatrix}
+$$
+$$
+\begin{pmatrix}
+  a & b & c & a \\
+  d & e & f & a \\
+  g & h & i & a \\
+  a & a & a & a
+\end{pmatrix}
+$$
+$$
+\begin{pmatrix}
+  a & b & c & a \\
+  d & e & f & a \\
+  g & h & i & a \\
+  a & a & a & a
+\end{pmatrix}
+$$
+>However, when multiplying two `float4x4` with `float4x4.operator *`, the operator does a component-wise operation (ex: for the second element of the first column result[0,1] = a[0,1] * b[0,1]) . To do a standard matrix multiplication we should use `math.mull()`.
+
+
+
 ## Other burst features
 
 ### Check if code is burst compiled
