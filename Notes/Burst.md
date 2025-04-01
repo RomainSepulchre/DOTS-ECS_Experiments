@@ -93,7 +93,7 @@ $$
 
 When multiplying two `Matrix4x4` with `Matrix4x4.operator *`, the result is a standard matrix multiplication: each element of the resulting matrix is the dot product of the rows and columns.
 
-- Matrix4x4 A * Matrix4x4 B: 
+- Matrix4x4 C = Matrix4x4 A * Matrix4x4 B: 
 
 $$
 \begin{pmatrix}
@@ -106,9 +106,9 @@ $$
 
 > The result for the first element is dot product of A first column and B first row: C[0,0] = (3,5,6,7) . (1,6,1,7) = 3*1 + 5*6 + 6*1 + 7*7 = 88.
 
-However, when multiplying two `float4x4` with `float4x4.operator *`, the operator does a component-wise operation. To do a standard matrix multiplication we should use `math.mull()`.
+However, when multiplying two `float4x4` with `float4x4.operator *`, the operator does a component-wise operation. **To do a standard matrix multiplication we should use `math.mul()`**.
 
-- float4x4 A * float4x4 B: 
+- float4x4 C = float4x4 A * float4x4 B: 
 
 $$
 \begin{pmatrix}
@@ -121,8 +121,19 @@ $$
 
 > The result for the first element is A first element multiplied by B first element: C[0,0] = A[0,0] * B[0,0] = 3 * 1 = 3.
 
+>**! When using `math.mul()` the first argument will be the multiplicator and the second the multiplicated: `math.mul(A, B)` => matrix B * matrix A (and not matrix A * matrix B).**
+
 ### Random with Unity.Mathematics
 
+...
+
+### Burst Aliasing
+
+...
+
+### SIMD Optimization
+
+...
 
 ## Other burst features
 
