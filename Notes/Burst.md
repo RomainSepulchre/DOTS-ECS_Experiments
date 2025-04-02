@@ -129,7 +129,7 @@ $$
 
 *Unity.Mathematics* `Random` is very to generate random numbers, however when using it in multithreaded code it requires extra care. We could think it would be a good idea to create a single `Random` instance on the main thread and pass it to every jobs that need to generate randon numbers but this should be avoided: **a job instance copy the data it requires to allow a safe multithreaded code which means every thread will have its own copy of our original `Random` instance** and all of them will have the same seed. So every thread will generate the same numbers. Even worse, `state` value is never copied back from a job instance to our main thread instance, so every frame we will generate the same numbers unless we generate random number directly on the main thread `Random` at some point.
 
-To avoid this we have several solutions:
+**To avoid this we have several solutions:**
 - When working with entities, the simpliest way is simply to have one instance of `Random` per entity that we store in a component. Jobs can use the instance to generate random numbers for this particular entity and the state will stays unique for this entity as long as the component exists.
 - We can also create an array of `Random` instances initialized with [`CreateFromIndex()`][createFromIndex()] and the thread or chunk index in the job to select the instance to use.
 
@@ -137,7 +137,6 @@ To avoid this we have several solutions:
 [random]: https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.Random.html
 [next()]:https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.Random.html#Unity_Mathematics_Random_NextBool
 [createFromIndex()]:https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.Random.CreateFromIndex.html#Unity_Mathematics_Random_CreateFromIndex_System_UInt32_
-...
 
 ### Burst Aliasing
 
