@@ -44,6 +44,14 @@ namespace ECS.TargetAndSeekerDemo
                         newMovement.Timer = random.NextFloat(newMovement.MinTimer, newMovement.MaxTimer);
                         state.EntityManager.SetComponentData(newEntity, newMovement);
                     }
+
+                    // Assign the random by using the random generated for spawning this entity
+                    if (SystemAPI.HasComponent<RandomData>(newEntity))
+                    {
+                        RandomData newRandom = SystemAPI.GetComponent<RandomData>(newEntity);
+                        newRandom.Value = random;
+                        state.EntityManager.SetComponentData(newEntity, newRandom);
+                    }
                 }
 
                 state.EntityManager.SetComponentEnabled(entity, ComponentType.ReadWrite<Spawner>(), false);
