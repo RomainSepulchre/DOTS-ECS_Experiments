@@ -981,8 +981,12 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1132734525451741762, guid: cb4652f1b4dfc9f45b469c4c7717c391, type: 3}
+      propertyPath: linesToDraw
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 1132734525451741762, guid: cb4652f1b4dfc9f45b469c4c7717c391, type: 3}
       propertyPath: ChangeColorOverLineDraw
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4490810703994850708, guid: cb4652f1b4dfc9f45b469c4c7717c391, type: 3}
       propertyPath: m_Name
