@@ -79,13 +79,14 @@ public class TestMathRandom : MonoBehaviour
         {
             float3 origin = randomCtrOrigin.position;
             Random random = new Random((uint)i);
+            Debug.Log($"{i+1}/{linesToDraw} - Seed: {(uint)i}, State:{random.state}");
             float3 dir = random.NextFloat3Direction();
 
             Color col = Color.green;
-            if(ChangeColorOverLineDraw)
-            {
-                col.a = 1f - ((i + 1) / (float)linesToDraw);
-            }
+            //if(ChangeColorOverLineDraw)
+            //{
+            //    col.a = 1f - ((i + 1) / (float)linesToDraw);
+            //}
 
             Debug.DrawLine(origin, origin + dir * 5, col);
             ctrInts.Add(random.NextInt());
@@ -105,6 +106,7 @@ public class TestMathRandom : MonoBehaviour
         {
             float3 origin = randomCreateFromIndexOrigin.position;
             Random random = Random.CreateFromIndex((uint)i);
+            Debug.Log($"{i + 1}/{linesToDraw} - Index: {(uint)i}, State:{random.state}");
             float3 dir = random.NextFloat3Direction();
             Debug.DrawLine(origin, origin + dir * 5, Color.red);
             createFromIndexInts.Add(random.NextInt());
