@@ -1,9 +1,11 @@
+using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
+using UnityEngine;
 
 namespace Burst.SIMD.SimpleFustrum
 {
@@ -137,14 +139,30 @@ namespace Burst.SIMD.SimpleFustrum
             var p0 = PlanePackets[0];
             var p1 = PlanePackets[1];
 
-            // TODO: Log to breakdown what is happening and be sure I correctly understood how this solution works
+            // Each component of a bool4 tell if the sphere is inside or outside of the culling for a specific plane:
+            //  - 1st Packet bool4(left plane, right plane, down plane, up plane)
+            //  - 2nd Packet bool4(near plane, far plane, fake plane*, fake plane*) *:fake plane are the planes we added to fill the packet, they always return false.
             // math.dot() is replaced with explicit multiply and add operations, because we’re now performing a dot product between a single position vector (pos.x, pos.y, pos.z) and four plane normal vectors (for instance, (p0.Xs, p0.Ys, p0.Zs)) simultaneously.
-            // Bitwise OR operation to merge result of both plane packets
-            bool4 masks = (p0.Xs * pos.x + p0.Ys * pos.y + p0.Zs * pos.z + p0.Distances + radius.Value <= 0) |
-                          (p1.Xs * pos.x + p1.Ys * pos.y + p1.Zs * pos.z + p1.Distances + radius.Value <= 0);
+            bool4 firstPacketMask = (p0.Xs * pos.x + p0.Ys * pos.y + p0.Zs * pos.z + p0.Distances + radius.Value <= 0);
+            bool4 secondPacketMask = (p1.Xs * pos.x + p1.Ys * pos.y + p1.Zs * pos.z + p1.Distances + radius.Value <= 0);
+            
+#if false // Breakdown of bool4 calulation for the example:
 
-            // If every bool in bool4 is set to false we are in otherwise we are out
-            visibility.Value = masks.Equals(new bool4(false)) ? 1 : 0;
+            // 1. We manually do the dot product by multiplying each component float4 by the corresponding float in the sphere position:
+            float4 dotProduct = (p0.Xs * pos.x + p0.Ys * pos.y + p0.Zs * pos.z);
+            // 2. We make the sum of dotProduct float4 from step 1 and the distance float4
+            float4 sumDotAndDist = dotProduct + p0.Distances;
+            // 3. We add the sphere radius float to our float4 calulated in step 2 (--> When doing the sum of a float4 and float, the float is added to every component of the float4)
+            float4 resultFloat4 = sumDotAndDist + radius.Value;
+            // 4. Every component of the Float4 is compared with <= 0 to define the value of each component of the bool4
+            bool4 resultMask = resultFloat4 <= 0;
+#endif
+
+            // Merge both masks with a OR BITWISE OPERATION
+            bool4 mergedMasks = firstPacketMask | secondPacketMask;
+
+            // Every bool in the bool4 must be set to false to assume we are inside the culling, otherwise we are outside
+            visibility.Value = mergedMasks.Equals(new bool4(false)) ? 1 : 0;
 
             // Change material color to show objects out of the culling
             baseColor.Value = visibility.Value == 1 ? new float4(0.5f, 0.5f, 0.5f, 1f) : new float4(1f, 0, 0, 1f);

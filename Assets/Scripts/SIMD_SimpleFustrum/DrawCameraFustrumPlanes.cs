@@ -5,6 +5,9 @@ namespace Burst.SIMD.SimpleFustrum
 {
     public class DrawCameraFustrumPlanes : MonoBehaviour
     {
+        public bool showPlaneNormals = true;
+        public bool renderPlaneMesh = false;
+
         public Material[] materials;
 
         private Camera _camera;
@@ -19,6 +22,22 @@ namespace Burst.SIMD.SimpleFustrum
             Color.blue,
         };
         private GameObject[] _planeObj = new GameObject[6];
+
+        private void OnEnable()
+        {
+            foreach (var obj in _planeObj)
+            {
+                if (obj != null) obj.SetActive(true);
+            }
+        }
+
+        private void OnDisable()
+        {
+            foreach (var obj in _planeObj)
+            {
+                if (obj != null) obj.SetActive(false);
+            }
+        }
 
         void Start()
         {
@@ -45,7 +64,7 @@ namespace Burst.SIMD.SimpleFustrum
             // Go through all _cameraPlanes
             for (int i = 0; i < 6; i++)
             {
-                DrawPlaneNormal(i);
+                if(showPlaneNormals) DrawPlaneNormal(i);
                 UpdatePlaneObject(i);
             }
         }
@@ -77,7 +96,16 @@ namespace Burst.SIMD.SimpleFustrum
 
         private void UpdatePlaneObject(int i)
         {
-            _planeObj[i].transform.position = -_cameraPlanes[i].normal * _cameraPlanes[i].distance;
+            if(renderPlaneMesh)
+            {
+                _planeObj[i].SetActive(true);
+            }
+            else
+            {
+                _planeObj[i].SetActive(false);
+            }
+
+                _planeObj[i].transform.position = -_cameraPlanes[i].normal * _cameraPlanes[i].distance;
             _planeObj[i].transform.rotation = Quaternion.FromToRotation(Vector3.up, _cameraPlanes[i].normal);
         }
     }
