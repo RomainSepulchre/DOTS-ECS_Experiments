@@ -14,20 +14,17 @@ namespace ECS.TargetAndSeekerDemo
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
-            moveQuery = SystemAPI.QueryBuilder().WithAllRW<Movement, LocalTransform>().Build();
+            moveQuery = SystemAPI.QueryBuilder().WithAllRW<Movement, LocalTransform>().WithAllRW<RandomData>().Build();
             state.RequireForUpdate(moveQuery);
         }
 
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            // TODO: Can I use Random.Range with burstcompile ?
-            //uint randomSeed = (uint)UnityEngine.Random.Range(1, uint.MaxValue);
             MoveJob moveJob = new MoveJob()
             {
                 DeltaTime = SystemAPI.Time.DeltaTime,
                 ElapsedTime = SystemAPI.Time.ElapsedTime,
-                ///RandomSeed = randomSeed,
             };
 
             // Schedule job
@@ -40,28 +37,24 @@ namespace ECS.TargetAndSeekerDemo
     {
         [ReadOnly] public float DeltaTime;
         [ReadOnly] public double ElapsedTime;
-        //[ReadOnly] public uint RandomSeed;
 
-        public void Execute(ref Movement movement, ref LocalTransform transform, [EntityIndexInChunk] int indexInChunk, [ChunkIndexInQuery] int chunkIndex)
+        public void Execute(ref Movement movement, ref LocalTransform transform, ref RandomData random)
         {
-            uint seed = (uint)((chunkIndex * indexInChunk) + ElapsedTime / DeltaTime);
-
             // Process timer and change direction is timer is finished
-            ProcessTimer(ref movement, seed);
+            ProcessTimer(ref movement, ref random);
 
             // Process movement
             ProcessMovement(ref movement, ref transform);
         }
 
-        private void ProcessTimer(ref Movement movement, uint seed)
+        private void ProcessTimer(ref Movement movement, ref RandomData random)
         {
             movement.Timer -= DeltaTime;
             if (movement.Timer <= 0)
             {
-                Random random = new Random(seed);
-                float2 new2dDirection = random.NextFloat2Direction();
+                float2 new2dDirection = random.Value.NextFloat2Direction();
                 movement.Direction = new float3(new2dDirection.x, 0, new2dDirection.y);
-                movement.Timer = random.NextFloat(movement.MinTimer, movement.MaxTimer);
+                movement.Timer = random.Value.NextFloat(movement.MinTimer, movement.MaxTimer);
             }
         }
 
