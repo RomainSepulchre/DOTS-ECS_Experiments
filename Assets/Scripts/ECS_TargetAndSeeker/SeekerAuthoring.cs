@@ -31,7 +31,7 @@ namespace ECS.TargetAndSeekerDemo
 
             RandomData random = new RandomData()
             {
-                Value = Unity.Mathematics.Random.CreateFromIndex((uint)Random.Range(1, uint.MaxValue)) // Default value is the same for every entity when spawned (but different if entity is baked in the hierarchy)
+                Value = new Unity.Mathematics.Random((uint)Random.Range(1, uint.MaxValue)) // Default value is the same for every entity when spawned (but different if entity is baked in the hierarchy)
             };
             AddComponent(entity, random);
 
