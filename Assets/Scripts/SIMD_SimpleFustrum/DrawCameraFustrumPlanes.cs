@@ -84,7 +84,7 @@ namespace Burst.SIMD.SimpleFustrum
                 p.GetComponent<MeshRenderer>().material = materials[i];
                 p.transform.position = -_cameraPlanes[i].normal * _cameraPlanes[i].distance;
                 p.transform.rotation = Quaternion.FromToRotation(Vector3.up, _cameraPlanes[i].normal);
-                p.transform.localScale = Vector3.one * 100f; // set a huge scale for the planes
+                p.transform.localScale = Vector3.one * 30f; // set a huge scale for the planes
                 _planeObj[i] = p;
             }
             else // otherwise update pos and rotation

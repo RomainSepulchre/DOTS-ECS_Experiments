@@ -12,14 +12,15 @@ namespace Burst.SIMD.SimpleFustrum
     {
         private NativeArray<float4> _planes;
         private NativeArray<PlanePacket4> _planePackets;
-        private EntityQuery query;
+        private EntityQuery sphereQuery;
 
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             _planes = new NativeArray<float4>(6, Allocator.Persistent);
             _planePackets = new NativeArray<PlanePacket4>(2, Allocator.Persistent); // 2 because we need 2 float4 to store 6 elements
-            query = SystemAPI.QueryBuilder().WithAll<LocalToWorld,SphereRadius>().WithAllRW<SphereVisible, HDRPMaterialPropertyBaseColor>().Build();
+            sphereQuery = SystemAPI.QueryBuilder().WithAll<LocalToWorld,SphereRadius>().WithAllRW<SphereVisible, HDRPMaterialPropertyBaseColor>().Build();
+            state.RequireForUpdate(sphereQuery);
         }
 
         // OnUpdate can't be Burst Compiled because we access a managed type (Camera) in FustrumCullingHelper.UpdateFustrumPlanes()
@@ -79,13 +80,15 @@ namespace Burst.SIMD.SimpleFustrum
                 BaseColorTypeHandle = SystemAPI.GetComponentTypeHandle<HDRPMaterialPropertyBaseColor>(false), // false = is not read only
                 FustrumPlanes = _planes
             };
-            state.Dependency = cullJobWithSpherePackets.ScheduleParallel(query, state.Dependency);
+            state.Dependency = cullJobWithSpherePackets.ScheduleParallel(sphereQuery, state.Dependency);
             state.Dependency.Complete();
         }
     }
 
     /// <summary>
     /// Simple version of the culling job.
+    /// With 100000 spheres with all worker thread: 0.23ms ? faster than method without branching? and similar to plane packets?
+    /// With 100000 spheres with one worker thread: 0.85-0.90ms
     /// </summary>
     [BurstCompile(OptimizeFor = OptimizeFor.Performance)] // How should the generated burst-compiled code be optimized (https://docs.unity3d.com/Packages/com.unity.burst@1.8/api/Unity.Burst.OptimizeFor.html)
     partial struct CullJob : IJobEntity
@@ -117,6 +120,8 @@ namespace Burst.SIMD.SimpleFustrum
     /// <summary>
     /// Version of the culling job that remove the break statement which generate branching in the assembly code.
     /// The job perform more computation but the performance gains from removing the branch allows the code to run faster than the simple version.
+    /// With 100000 spheres with all worker thread: ~0.26ms
+    /// With 100000 spheres with one worker thread: 0.80-0.85ms
     /// </summary>
     [BurstCompile(OptimizeFor = OptimizeFor.Performance)]
     partial struct CullJobNoBranch : IJobEntity
@@ -143,6 +148,8 @@ namespace Burst.SIMD.SimpleFustrum
     /// <summary>
     /// Version of the culling job where the data is repacked in plane packets to allow SIMD instructions.
     /// By checking a sphere with 2 PlanePacket4 in this solution, we have the same result as using 6 planes with only 33% of the mathematical operations.
+    /// With 100000 spheres with all worker thread: ~0.23ms
+    /// With 100000 spheres with one worker thread: 0.63-0.69ms
     /// </summary>
     [BurstCompile(OptimizeFor = OptimizeFor.Performance)]
     partial struct CullJobWithPackets : IJobEntity
@@ -187,6 +194,9 @@ namespace Burst.SIMD.SimpleFustrum
 
     /// <summary>
     /// Version of the culling job where the use of SIMD optimizations is even better: instead of packing frustrum planes in packets of float4, we pack the spheres to have a wider amount of data packed
+    /// This version is even faster than the previous one because instead of packing 6 planes, we pack the spheres using a chunk job which further reduces the number of mathematical operation needed
+    /// With 100000 spheres with all worker thread: ~0.20ms
+    /// With 100000 spheres with one worker thread: 0.54-0.59ms
     /// </summary>
     [BurstCompile(OptimizeFor = OptimizeFor.Performance)]
     partial struct CullJobWithSpherePackets : IJobChunk
