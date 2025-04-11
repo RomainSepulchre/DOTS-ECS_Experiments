@@ -4,6 +4,7 @@ using Unity.Transforms;
 using Unity.Mathematics;
 using UnityEngine;
 using Unity.Collections;
+using DOTS.Utilities;
 
 namespace ECS.TargetAndSeekerDemo
 {
@@ -19,6 +20,7 @@ namespace ECS.TargetAndSeekerDemo
             // In Query builder we can require the buffer by its component name
             lastPosBufferQuery = SystemAPI.QueryBuilder().WithAllRW<LastPositions>().WithAll<LocalTransform>().Build();
             state.RequireForUpdate(lastPosBufferQuery);
+            state.RequireForUpdate<Exec_ECS_TargetAndSeeker>();
         }
 
         [BurstCompile]

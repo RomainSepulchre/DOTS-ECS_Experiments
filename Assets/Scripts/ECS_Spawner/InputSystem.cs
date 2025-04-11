@@ -1,3 +1,4 @@
+using DOTS.Utilities;
 using Unity.Burst;
 using Unity.Entities;
 using UnityEngine;
@@ -11,6 +12,7 @@ namespace ECS.ECSExperiments
         {
             // Add a component on the system to hold the input data
             state.EntityManager.AddComponent<InputData>(state.SystemHandle);
+            state.RequireForUpdate<Exec_ECS_Experiments>();
         }
 
         [BurstCompile]

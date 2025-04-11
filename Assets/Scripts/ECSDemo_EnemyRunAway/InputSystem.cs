@@ -1,3 +1,4 @@
+using DOTS.Utilities;
 using Unity.Burst;
 using Unity.Entities;
 using UnityEngine;
@@ -12,6 +13,7 @@ namespace ECS.EnemyRunAwayDemo
         {
             // Add my player input component on the system handle
             state.EntityManager.AddComponent<PlayerInput>(state.SystemHandle);
+            state.RequireForUpdate<Exec_ECS_EnemyRunAway>();
         }
 
         [BurstCompile]

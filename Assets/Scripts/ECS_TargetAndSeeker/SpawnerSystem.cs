@@ -1,3 +1,4 @@
+using DOTS.Utilities;
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -16,6 +17,7 @@ namespace ECS.TargetAndSeekerDemo
         {
             spawnersQuery = SystemAPI.QueryBuilder().WithAll<Spawner>().Build();
             state.RequireForUpdate(spawnersQuery);
+            state.RequireForUpdate<Exec_ECS_TargetAndSeeker>();
         }
 
         [BurstCompile]

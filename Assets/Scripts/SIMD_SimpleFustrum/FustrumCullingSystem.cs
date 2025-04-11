@@ -1,3 +1,4 @@
+using DOTS.Utilities;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
@@ -21,6 +22,7 @@ namespace Burst.SIMD.SimpleFustrum
             _planePackets = new NativeArray<PlanePacket4>(2, Allocator.Persistent); // 2 because we need 2 float4 to store 6 elements
             sphereQuery = SystemAPI.QueryBuilder().WithAll<LocalToWorld,SphereRadius>().WithAllRW<SphereVisible, HDRPMaterialPropertyBaseColor>().Build();
             state.RequireForUpdate(sphereQuery);
+            state.RequireForUpdate<Exec_SIMD_SimpleFustrum>();
         }
 
         // OnUpdate can't be Burst Compiled because we access a managed type (Camera) in FustrumCullingHelper.UpdateFustrumPlanes()

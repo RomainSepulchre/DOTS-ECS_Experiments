@@ -1,3 +1,4 @@
+using DOTS.Utilities;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -13,6 +14,7 @@ namespace Burst.SIMD.SimpleFustrum
         {
             spawnerQuery = SystemAPI.QueryBuilder().WithAll<BallSpawner>().WithAllRW<RandomData>().Build();
             state.RequireForUpdate(spawnerQuery);
+            state.RequireForUpdate<Exec_SIMD_SimpleFustrum>();
         }
 
         public void OnUpdate(ref SystemState state)

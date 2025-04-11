@@ -1,3 +1,4 @@
+using DOTS.Utilities;
 using ECS.ECSExperiments;
 using Unity.Burst;
 using Unity.Collections;
@@ -19,6 +20,7 @@ namespace ECS.ECSExperiments
             inputSystemHandle = state.World.GetExistingSystem<InputSystem>(); // Not compatible with burst compile
             sphereQuery = SystemAPI.QueryBuilder().WithAllRW<LocalTransform>().WithAll<MoveableSphere>().Build();
             state.RequireForUpdate(sphereQuery);
+            state.RequireForUpdate<Exec_ECS_Experiments>();
         }
 
         [BurstCompile]

@@ -1,3 +1,4 @@
+using DOTS.Utilities;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
@@ -26,6 +27,7 @@ namespace ECS.ECSExperiments
 
             // Require there is at least one cube that match the query to run the update
             state.RequireForUpdate(cubeQuery);
+            state.RequireForUpdate<Exec_ECS_Experiments>();
         }
 
         [BurstCompile]

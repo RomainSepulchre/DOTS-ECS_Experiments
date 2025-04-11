@@ -3,6 +3,7 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.Transforms;
 using Unity.Mathematics;
+using DOTS.Utilities;
 
 namespace ECS.EnemyRunAwayDemo
 {
@@ -16,6 +17,7 @@ namespace ECS.EnemyRunAwayDemo
         {
             enemyQuery = SystemAPI.QueryBuilder().WithAllRW<LocalTransform>().WithAll<Enemy>().Build();
             state.RequireForUpdate(enemyQuery);
+            state.RequireForUpdate<Exec_ECS_EnemyRunAway>();
         }
 
         [BurstCompile]

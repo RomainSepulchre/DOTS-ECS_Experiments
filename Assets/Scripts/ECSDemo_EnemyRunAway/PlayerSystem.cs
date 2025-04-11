@@ -1,3 +1,4 @@
+using DOTS.Utilities;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -17,6 +18,7 @@ namespace ECS.EnemyRunAwayDemo
             inputSysHandle = state.World.GetExistingSystem<InputSystem>();
             playerQuery = SystemAPI.QueryBuilder().WithAllRW<LocalTransform>().WithAll<Player>().Build();
             state.RequireForUpdate(playerQuery); // Only update if there is at least one Entity with localTransform and player component
+            state.RequireForUpdate<Exec_ECS_EnemyRunAway>();
         }
 
         [BurstCompile]

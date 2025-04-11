@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Transforms;
+using DOTS.Utilities;
 
 namespace ECS.TargetAndSeekerDemo
 {
@@ -16,6 +17,7 @@ namespace ECS.TargetAndSeekerDemo
         {
             moveQuery = SystemAPI.QueryBuilder().WithAllRW<Movement, LocalTransform>().WithAllRW<RandomData>().Build();
             state.RequireForUpdate(moveQuery);
+            state.RequireForUpdate<Exec_ECS_TargetAndSeeker>();
         }
 
         [BurstCompile]

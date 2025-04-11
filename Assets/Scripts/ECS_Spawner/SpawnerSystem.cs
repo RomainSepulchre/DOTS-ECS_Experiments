@@ -7,6 +7,7 @@ using UnityEngine;
 using Random = Unity.Mathematics.Random;
 using Unity.Profiling;
 using System;
+using DOTS.Utilities;
 
 namespace ECS.ECSExperiments
 {
@@ -31,6 +32,7 @@ namespace ECS.ECSExperiments
 
             // Require there is at least one spawner that match the query to run the update
             state.RequireForUpdate(spawnerQuery);
+            state.RequireForUpdate<Exec_ECS_Experiments>();
 
             // ? This can't be mixed with a singleton backed in the hierarchy, this happens before the end of the baking
             //if (SystemAPI.HasSingleton<SpawnersManager>() == false) // Create the singleton a default value if doesn't exist

@@ -1,3 +1,4 @@
+using DOTS.Utilities;
 using ECS.TargetAndSeekerDemo;
 using System;
 using System.Collections.Generic;
@@ -30,6 +31,7 @@ namespace ECS.TargetAndSeekerDemo
             seekersQuery = SystemAPI.QueryBuilder().WithAllRW<Seeker>().Build();
             targetsQuery = SystemAPI.QueryBuilder().WithAll<Target, LocalTransform>().Build();
             state.RequireForUpdate(seekersQuery);
+            state.RequireForUpdate<Exec_ECS_TargetAndSeeker>();
         }
 
         [BurstCompile]
