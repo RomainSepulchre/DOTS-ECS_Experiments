@@ -320,6 +320,18 @@ The main methods and properties of `SystemState` are:
 
 For example, if we get a query for entities with ComponentA and ComponentB by calling SystemState.GetEntityQuery(), ComponentA and ComponentB will be registered with the system which would not have been the case if we called EntityManager.GetEntityQuery().
 
+### Prevent a system to run when it's not needed
+
+A system should only update when it is actually needed and has entities to process. To prevent a system to update when he doesn't have the required entities or components we can use `state.RequireForUpdate()` inside `OnCreate()` callback to tell him what he need to update.
+
+There is 2 way to use `state.RequireForUpdate()`:
+- `state.RequireForUpdate(EntityQuery)`: the system will only update if the `EntityQuery` provided return at least one entity.
+- `state.RequireForUpdate<ComponentType>()`: the system will only update if there is at least one component of the provided `ComponentType`.
+
+If we have complex requirements to run an update, we can use `state.RequireForUpdate()` several times to provided multiple needed `EntityQuery` or `ComponentType`.
+
+When we need at least one of several `EntityQuery` to return something, we can also use `RequireAnyForUpdate(params EntityQuery[])` to provide multiple queries and update when at least one of them give us entities.
+
 ### Why is it important to keep components accessed in a system registered ?
 
 The best way to understand why it's important is by looking at one of the most feature of system state: the **`Dependency`** property.
