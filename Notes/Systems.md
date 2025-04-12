@@ -394,6 +394,8 @@ public void OnUpdate(ref SystemState state)
 
 ```
 
+> Actually, because of source generation calling `job.Schedule()` in a ISystem is the equivalent of calling `state.Dependency = job.Schedule(state.Dependency)`. Still, I think its better to write the full line to be remembered of what is actually happening.
+
 ## Time in worlds and systems
 
 A world has a `Time` property that returns a `TimeData` struct which contains the **frame delta time** and the **elasped time**. The values are updated in the system `UpdateWorldTimeSystem`.
