@@ -195,7 +195,7 @@ MonoBehaviour:
   ballVelocityDecay: 0
   ballKickingRange: 0
   ballKickForce: 0
-  ballPrefab: {fileID: 0}
+  ballPrefab: {fileID: 7506443167814204419, guid: 214d42dbe6fd97a4a95c05fde1312df7, type: 3}
 --- !u!1 &1770187777
 GameObject:
   m_ObjectHideFlags: 0
