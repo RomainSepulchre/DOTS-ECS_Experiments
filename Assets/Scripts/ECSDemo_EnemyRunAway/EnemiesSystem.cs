@@ -3,7 +3,7 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.Transforms;
 using Unity.Mathematics;
-using DOTS.Utilities;
+using Project.Utilities;
 
 namespace ECS.EnemyRunAwayDemo
 {

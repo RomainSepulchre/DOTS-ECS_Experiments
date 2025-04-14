@@ -1,7 +1,7 @@
 using Unity.Entities;
 using UnityEngine;
 
-namespace DOTS.Utilities
+namespace Project.Utilities
 {
     public class ExecuteAuthoring : MonoBehaviour
     {

@@ -4,7 +4,7 @@ using Unity.Transforms;
 using Unity.Mathematics;
 using UnityEngine;
 using Unity.Collections;
-using DOTS.Utilities;
+using Project.Utilities;
 
 namespace ECS.TargetAndSeekerDemo
 {

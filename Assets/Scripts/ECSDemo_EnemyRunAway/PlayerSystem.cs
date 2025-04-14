@@ -1,4 +1,4 @@
-using DOTS.Utilities;
+using Project.Utilities;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;

@@ -1,4 +1,4 @@
-using DOTS.Utilities;
+using Project.Utilities;
 using ECS.TargetAndSeekerDemo;
 using System;
 using System.Collections.Generic;

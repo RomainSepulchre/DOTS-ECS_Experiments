@@ -7,7 +7,7 @@ using UnityEngine;
 using Unity.Mathematics;
 using Random = Unity.Mathematics.Random;
 using Unity.Profiling;
-using DOTS.Utilities;
+using Project.Utilities;
 
 namespace ECS.ECSExperiments
 {

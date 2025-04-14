@@ -1,4 +1,4 @@
-using DOTS.Utilities;
+using Project.Utilities;
 using Unity.Entities;
 using Unity.Transforms;
 using UnityEngine;
