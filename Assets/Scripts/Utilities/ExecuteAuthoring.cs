@@ -10,6 +10,7 @@ namespace Project.Utilities
         public bool ECS_Experiments;
         public bool ECS_TargetAndSeeker;
         public bool ECS_RotatingCube;
+        public bool ECS_Ball;
     }
 
     class ExecuteBaker : Baker<ExecuteAuthoring>
@@ -23,6 +24,7 @@ namespace Project.Utilities
             if (authoring.ECS_Experiments) AddComponent<Exec_ECS_Experiments>(entity);
             if (authoring.ECS_TargetAndSeeker) AddComponent<Exec_ECS_TargetAndSeeker>(entity);
             if (authoring.ECS_RotatingCube) AddComponent<Exec_ECS_RotatingCube>(entity);
+            if (authoring.ECS_Ball) AddComponent<Exec_ECS_Ball>(entity);
         }
     }
 
@@ -39,6 +41,9 @@ namespace Project.Utilities
     {
     }
     public struct Exec_ECS_RotatingCube : IComponentData
+    {
+    }
+    public struct Exec_ECS_Ball : IComponentData
     {
     }
 }
