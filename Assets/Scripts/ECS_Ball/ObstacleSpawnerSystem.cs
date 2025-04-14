@@ -1,3 +1,4 @@
+using Project.Utilities;
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -11,7 +12,7 @@ namespace ECS.Ball
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<Config>();
-
+            state.RequireForUpdate<Exec_ECS_Ball>();
         }
 
         [BurstCompile]

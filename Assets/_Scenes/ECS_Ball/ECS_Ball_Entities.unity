@@ -188,9 +188,9 @@ MonoBehaviour:
   obstacleRadius: 2
   obstacleOffset: 10
   obstaclePrefab: {fileID: 8319754928438413652, guid: 0d07c8b4a38099e4c9c557912d53b631, type: 3}
-  playerOffset: 0
-  playerSpeed: 0
-  playerPrefab: {fileID: 0}
+  playerOffset: 5
+  playerSpeed: 1
+  playerPrefab: {fileID: 3911424513245122157, guid: adcfe67257263064e9fad54019e25329, type: 3}
   ballStartVelocity: 0
   ballVelocityDecay: 0
   ballKickingRange: 0
