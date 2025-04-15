@@ -4,6 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using Unity.Collections;
 
 namespace ECS.Ball
 {
@@ -22,8 +23,6 @@ namespace ECS.Ball
         {
             Config config = SystemAPI.GetSingleton<Config>();
 
-            // TODO: transform in a job
-
             // Input.GetAxis is burst compatible
             float horizontal = Input.GetAxis($"Horizontal");
             float vertical = Input.GetAxis($"Vertical");
@@ -33,25 +32,47 @@ namespace ECS.Ball
 
             if (movement.Equals(float3.zero)) return; // No Input
 
-            foreach(var transform in SystemAPI.Query<RefRW<LocalTransform>>().WithAll<Player>())
+            // TODO: TempJob vs state.WorldUpdateAllocator ?
+            NativeArray<LocalTransform> obstTransforms = SystemAPI.QueryBuilder().WithAll<LocalTransform, Obstacle>().Build().ToComponentDataArray<LocalTransform>(Allocator.TempJob);
+
+            PlayerMovementJob moveJob = new PlayerMovementJob()
             {
-                float minDist = config.ObstacleRadius + (transform.ValueRO.Scale/2); // capsule radius is its scale/2
-                float minDistSQ = minDist * minDist;
-                float3 newPosition = transform.ValueRO.Position + movement;
-
-                // TODO: method to check is collision highly unoptimized -> check way of doing spatial query
-                // Check for player/obstacle collision
-                foreach (var obstTransform in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<Obstacle>())
-                {
-                    if(math.distancesq(newPosition, obstTransform.ValueRO.Position) <= minDistSQ)
-                    {
-                        newPosition = transform.ValueRO.Position;
-                        break;
-                    }
-                }
-
-                transform.ValueRW.Position = newPosition;
-            }
+                Movement = movement,
+                Config = config,
+                ObstTransforms = obstTransforms
+            };
+            state.Dependency = moveJob.ScheduleParallel(state.Dependency);
+            obstTransforms.Dispose(state.Dependency);
         }
     }
+
+    [WithAll(typeof(Player))] // Equivalent to .WithAll() in a classic entityQuery
+    [BurstCompile]
+    public partial struct PlayerMovementJob : IJobEntity
+    {
+        [ReadOnly] public float3 Movement;
+        [ReadOnly] public Config Config;
+        [ReadOnly] public NativeArray<LocalTransform> ObstTransforms;
+
+        public void Execute(ref LocalTransform transform)
+        {
+            float minDist = Config.ObstacleRadius + (transform.Scale / 2); // capsule radius is its scale/2
+            float minDistSQ = minDist * minDist;
+            float3 newPosition = transform.Position + Movement;
+
+            // TODO: method to check is collision highly unoptimized -> check way of doing spatial query
+            // Check for player/obstacle collision
+            foreach (var obstTransform in ObstTransforms)
+            {
+                if (math.distancesq(newPosition, obstTransform.Position) <= minDistSQ)
+                {
+                    newPosition = transform.Position;
+                    break;
+                }
+            }
+
+            transform.Position = newPosition;
+        }
+    }
+
 }

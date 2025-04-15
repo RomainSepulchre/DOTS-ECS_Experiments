@@ -17,6 +17,7 @@ Resources links:
 - [EntityComponentSystemSamples github repository](https://github.com/Unity-Technologies/EntityComponentSystemSamples/tree/master?tab=readme-ov-file)
 - [Document Unity Entities 101](https://docs.google.com/document/d/1R6E4IDpfLatwHITlCND0i5TuMVG0CMGsentFL-3RQT0/edit?tab=t.0)
 - [Unity ECS Jobs with entities documentation](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/job-system.html)
+- [Unity forum post about rewindable allocator](https://discussions.unity.com/t/rewindable-allocator-whats-the-point/927249/2)
 
 To optimize further the performance of ECS we can use [jobs](jobs.md) to process entity data on worker threads.
 
