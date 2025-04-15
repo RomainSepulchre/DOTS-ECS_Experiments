@@ -31,17 +31,21 @@ namespace ECS.Ball
                 {
                     Entity ball = state.EntityManager.Instantiate(config.BallPrefab);
 
+                    float2 direction = random.NextFloat2Direction();
                     Velocity newVelocity = new Velocity()
                     {
-                        Value = random.NextFloat2Direction() * config.BallStartVelocity
+                        Value = direction * config.BallStartVelocity
                     };
                     state.EntityManager.SetComponentData(ball, newVelocity);
 
+                    float ballScale = 1;
+                    float playerAndBallRadius = (playerTransform.ValueRO.Scale / 2) + (ballScale / 2);
+                    float3 playerRadiusOffset = new float3(direction.x, 0, direction.y) * playerAndBallRadius;
                     LocalTransform newBallTransform = new LocalTransform()
                     {
-                        Position = playerTransform.ValueRO.Position +( new float3(newVelocity.Value.x, 0, newVelocity.Value.y)),
+                        Position = playerTransform.ValueRO.Position + playerRadiusOffset,
                         Rotation = Quaternion.identity,
-                        Scale = 1
+                        Scale = ballScale
                     };
                     state.EntityManager.SetComponentData(ball, newBallTransform);
 

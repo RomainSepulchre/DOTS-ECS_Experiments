@@ -191,8 +191,8 @@ MonoBehaviour:
   playerOffset: 5
   playerSpeed: 5
   playerPrefab: {fileID: 3911424513245122157, guid: adcfe67257263064e9fad54019e25329, type: 3}
-  ballStartVelocity: 0
-  ballVelocityDecay: 0
+  ballStartVelocity: 5
+  ballVelocityDecay: 0.25
   ballKickingRange: 0
   ballKickForce: 0
   ballPrefab: {fileID: 7506443167814204419, guid: 214d42dbe6fd97a4a95c05fde1312df7, type: 3}

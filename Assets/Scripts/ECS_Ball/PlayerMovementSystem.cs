@@ -35,7 +35,7 @@ namespace ECS.Ball
 
             foreach(var transform in SystemAPI.Query<RefRW<LocalTransform>>().WithAll<Player>())
             {
-                float minDist = config.ObstacleRadius + transform.ValueRO.Scale/2; // capsule radius is its scale/2
+                float minDist = config.ObstacleRadius + (transform.ValueRO.Scale/2); // capsule radius is its scale/2
                 float minDistSQ = minDist * minDist;
                 float3 newPosition = transform.ValueRO.Position + movement;
 
