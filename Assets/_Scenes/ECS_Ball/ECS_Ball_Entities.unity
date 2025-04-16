@@ -182,8 +182,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14a529e6dc2910444baac01bc6973b8b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  numRows: 10
-  numColumns: 10
+  numRows: 30
+  numColumns: 30
   obstacleGridCellSize: 14
   obstacleRadius: 2
   obstacleOffset: 10
@@ -193,8 +193,8 @@ MonoBehaviour:
   playerPrefab: {fileID: 3911424513245122157, guid: adcfe67257263064e9fad54019e25329, type: 3}
   ballStartVelocity: 5
   ballVelocityDecay: 0.25
-  ballKickingRange: 0
-  ballKickForce: 0
+  ballKickingRange: 1.5
+  ballKickForce: 3
   ballPrefab: {fileID: 7506443167814204419, guid: 214d42dbe6fd97a4a95c05fde1312df7, type: 3}
 --- !u!1 &1770187777
 GameObject:
