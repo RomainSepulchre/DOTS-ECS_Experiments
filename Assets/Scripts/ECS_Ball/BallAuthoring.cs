@@ -1,5 +1,7 @@
 using Unity.Entities;
 using UnityEngine;
+using Unity.Rendering;
+using Unity.Mathematics;
 
 namespace ECS.Ball
 {
@@ -23,6 +25,9 @@ namespace ECS.Ball
             Carried newCarried = new Carried();
             AddComponent(entity, newCarried);
             SetComponentEnabled<Carried>(entity, false);
+
+            HDRPMaterialPropertyBaseColor newBaseColor = new HDRPMaterialPropertyBaseColor() { Value = new float4(0.7555548f, 1f, 0f, 1f) };
+            AddComponent(entity, newBaseColor);
         }
     }
 }
