@@ -590,9 +590,10 @@ The number of worker used by the application can be configured by setting `JobUt
 
 When using a temporary allocated native array in an ECS job, if we don't wait for the job to complete in the system (which is often the case since it's preferable to schedule the job as a dependency of the system to complete it parrallely from other system) we have no direct way to deallocate the native container because we can't know when the job will complete and we don't have any callback when it's the case.
 
-To prevent memory leak and correctly dispose the native container, we have two possibilities:
+To prevent memory leak and correctly dispose the native container, we have three possibilities:
 1. Pass a job handle when we call dispose on our NativeContainer
-2. *Less recommended (Only works with NativeArray and might be deprecated)*: Use the `[DeallocateOnJobCompletion]` attribute
+2. Use a pre-built rewindable allocator from the Entity package
+3. *Less recommended (Only works with NativeArray and might be deprecated)*: Use the `[DeallocateOnJobCompletion]` attribute
 
 ### Pass a job handle when calling dispose 
 
@@ -619,6 +620,45 @@ public partial struct MySystem : ISystem
 }
 
 ```
+
+### Use a pre-built rewindable allocator with SystemState
+
+A rewindable allocator is a custom allocator that is a fast and thread-safe, it is useful to build other custom allocators. One of the main advantage of rewindable allocator, is that you don't need to manually free their allocation because they automatically rewind and free their allocations at one point. The entity package comes with pre-built rewindable allocator that can be used when working in a system:
+- [**World Update Allocator**][worldUpdateAllocator]: Each world create its own `WorldUpdate allocator` that is accessible from the SystemState (`SystemState.WorldUpdateAllocator`). All allocations made from it are automatically disposed after 2 full updates.
+- [**Entity Command Buffer Allocator**][ecbAllocator]: Each `EntityCommandBuffer` create its own `EntityCommandBuffer allocator`. This allocator works behind the scene and doesn't require code change, it is responsible for any allocation recorded in the ECB and is automatically deallocated after the buffer has played back.
+- [**System Group Allocator**][systemGroupAllocator]: The goal of a `SystemGroup allocator` is to manage allocation made within a system that updates at a different rate from the world update. Its an alternative to the `WorldUpdate allocator` where allocations will be automatically disposed after 2 full updates of this system group (instead of 2 full world update).
+
+Here is how to use the `WorldUpdate allocator`:
+```c#
+public partial struct MySystem : ISystem
+{
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        // Create a int array we will pass in the job
+        NativeArray<int> intArray = new new NativeArray<int>(1000, state.WorldUpdateAllocator);
+
+        MyJob job = new MyJob()
+        {
+            IntArray = intArray
+        };
+
+        // Schedule the job and assign it to system dependency
+        state.Dependency = job.schedule(state.Dependency);
+
+        // No need to call dispose(), the nativeArray is automatically disposed after 2 full world updates since we use the WorldUpdate allocator
+    }
+}
+```
+
+For more details on rewindable allocators you can check:
+- https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/allocators-overview.html
+- https://discussions.unity.com/t/rewindable-allocator-whats-the-point/927249/2
+- https://docs.unity.cn/Packages/com.unity.collections@2.1/manual/allocator-rewindable.html
+
+[worldUpdateAllocator]: https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/allocators-world-update.html
+[ecbAllocator]: https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/allocators-entity-command-buffer.html
+[systemGroupAllocator]: https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/allocators-system-group.html
 
 ### Use [DeallocateOnJobCompletion]
 
