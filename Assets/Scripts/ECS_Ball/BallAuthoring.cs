@@ -19,6 +19,10 @@ namespace ECS.Ball
 
             Velocity newVelocity = new Velocity();
             AddComponent(entity,newVelocity);
+
+            Carried newCarried = new Carried();
+            AddComponent(entity, newCarried);
+            SetComponentEnabled<Carried>(entity, false);
         }
     }
 }

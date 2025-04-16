@@ -23,9 +23,12 @@ namespace ECS.Ball
         [Header("Ball")]
         public float ballStartVelocity;
         public float ballVelocityDecay;
-        public float ballKickingRange;
+        public float ballInteractionRange;
         public float ballKickForce;
         public GameObject ballPrefab;
+
+        [Header("Carry")]
+        public Vector3 carryOffset;
     }
 
     class ConfigBaker : Baker<ConfigAuthoring>
@@ -50,9 +53,11 @@ namespace ECS.Ball
 
                 BallStartVelocity = authoring.ballStartVelocity,
                 BallVelocityDecay = authoring.ballVelocityDecay,
-                BallKickingRangeSQ = authoring.ballKickingRange * authoring.ballKickingRange,
+                BallInteractionRangeSQ = authoring.ballInteractionRange * authoring.ballInteractionRange,
                 BallKickForce = authoring.ballKickForce,
                 BallPrefab = GetEntity(authoring.ballPrefab, TransformUsageFlags.Dynamic),
+
+                CarryOffset = authoring.carryOffset,
 
                 RandomSeed = (uint)Random.Range(1, uint.MaxValue)
             };

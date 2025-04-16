@@ -8,6 +8,8 @@ using UnityEngine;
 
 namespace ECS.Ball
 {
+    [UpdateBefore(typeof(BallMovementSystem))] // To be sure kick is taken into account before next ball movement
+    [UpdateBefore(typeof(TransformSystemGroup))] // To ensure the entity is rendered at proper position every time it is moved
     public partial struct BallKickingSystem : ISystem
     {
         [BurstCompile]
@@ -39,7 +41,7 @@ namespace ECS.Ball
                 //    {
                 //        float distPlayerToBallSQ = math.distancesq(playerTransform.ValueRO.Position, ballTransform.ValueRO.Position);
 
-                //        if (distPlayerToBallSQ <= config.BallKickingRangeSQ)
+                //        if (distPlayerToBallSQ <= config.BallInteractionRangeSQ)
                 //        {
                 //            float2 dirPlayerToBall = ballTransform.ValueRO.Position.xz - playerTransform.ValueRO.Position.xz;
                 //            velocity.ValueRW.Value += math.normalizesafe(dirPlayerToBall) * config.BallKickForce;
@@ -67,7 +69,7 @@ namespace ECS.Ball
             {
                 float distPlayerToBallSQ = math.distancesq(PlayerTransforms[i].Position, ballTransform.Position);
 
-                if (distPlayerToBallSQ <= Config.BallKickingRangeSQ)
+                if (distPlayerToBallSQ <= Config.BallInteractionRangeSQ)
                 {
                     float2 dirPlayerToBall = ballTransform.Position.xz - PlayerTransforms[i].Position.xz;
                     velocity.Value += math.normalizesafe(dirPlayerToBall) * Config.BallKickForce;

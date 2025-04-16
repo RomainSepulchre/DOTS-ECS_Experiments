@@ -1,4 +1,5 @@
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace ECS.Ball
@@ -23,9 +24,12 @@ namespace ECS.Ball
         // Ball
         public float BallStartVelocity;
         public float BallVelocityDecay;
-        public float BallKickingRangeSQ; // Squared range to compare dist with squared value which is more effficient
+        public float BallInteractionRangeSQ; // Squared range to compare dist with squared value which is more effficient
         public float BallKickForce;
         public Entity BallPrefab;
+
+        // Carry
+        public float3 CarryOffset;
 
         // Random
         public uint RandomSeed;

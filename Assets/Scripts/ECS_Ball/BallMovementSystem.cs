@@ -37,6 +37,7 @@ namespace ECS.Ball
     }
 
     [WithAll(typeof(Ball))]
+    [WithDisabled(typeof(Carried))]
     [BurstCompile]
     public partial struct BallMovementJob : IJobEntity
     {

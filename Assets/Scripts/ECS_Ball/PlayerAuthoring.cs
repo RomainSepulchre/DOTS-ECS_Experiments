@@ -16,6 +16,10 @@ namespace ECS.Ball
 
             Player newPlayer = new Player();
             AddComponent(entity, newPlayer);
+
+            Carry newCarry = new Carry();
+            AddComponent(entity, newCarry);
+            SetComponentEnabled<Carry>(entity, false);
         }
     }
 }
