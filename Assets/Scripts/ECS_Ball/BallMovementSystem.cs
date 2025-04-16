@@ -1,5 +1,6 @@
 using Project.Utilities;
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -21,40 +22,60 @@ namespace ECS.Ball
         {
             Config config = SystemAPI.GetSingleton<Config>();
 
-            // TODO: Transform into job
+            // TODO: TempJob vs state.WorldUpdateAllocator ?
+            NativeArray<LocalTransform> obstTransforms = SystemAPI.QueryBuilder().WithAll<LocalTransform, Obstacle>().Build().ToComponentDataArray<LocalTransform>(Allocator.TempJob);
 
-            foreach (var (ballTransform, velocity) in SystemAPI.Query<RefRW<LocalTransform>, RefRW<Velocity>>().WithAll<Ball>())
+            BallMovementJob moveJob = new BallMovementJob()
             {
-                if (velocity.ValueRO.Value.Equals(float2.zero)) continue;
+                Config = config,
+                ObstTransforms = obstTransforms,
+                DeltaTime = SystemAPI.Time.DeltaTime
+            };
+            state.Dependency = moveJob.ScheduleParallel(state.Dependency);
+            obstTransforms.Dispose(state.Dependency);
+        }
+    }
 
-                float minDist = config.ObstacleRadius + (ballTransform.ValueRO.Scale / 2); // sphere radius is its scale/2
-                float minDistSQ = minDist * minDist;
+    [WithAll(typeof(Ball))]
+    [BurstCompile]
+    public partial struct BallMovementJob : IJobEntity
+    {
+        [ReadOnly] public Config Config;
+        [ReadOnly] public NativeArray<LocalTransform> ObstTransforms;
+        [ReadOnly] public float DeltaTime;
 
-                float magnitude = math.length(velocity.ValueRO.Value);
-                float3 velocityDirection = new float3(velocity.ValueRO.Value.x, 0, velocity.ValueRO.Value.y) ;
-                float3 newPosition = ballTransform.ValueRO.Position + velocityDirection * SystemAPI.Time.DeltaTime;
+        public void Execute(ref LocalTransform ballTransform, ref Velocity velocity)
+        {
+            if (velocity.Value.Equals(float2.zero)) return;
 
-                // Check Ball/Obstacle collision
-                foreach (var obstacleTransform in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<Obstacle>())
+            float minDist = Config.ObstacleRadius + (ballTransform.Scale / 2); // sphere radius is its scale/2
+            float minDistSQ = minDist * minDist;
+
+            float magnitude = math.length(velocity.Value);
+            float3 velocityDirection = new float3(velocity.Value.x, 0, velocity.Value.y);
+            float3 newPosition = ballTransform.Position + velocityDirection * DeltaTime;
+
+            // TODO: method to check is collision highly unoptimized -> check way of doing spatial query
+            // Check Ball/Obstacle collision
+            foreach (var obstacleTransform in ObstTransforms)
+            {
+                if (math.distancesq(obstacleTransform.Position, ballTransform.Position) <= minDistSQ)
                 {
-                    if(math.distancesq(obstacleTransform.ValueRO.Position, ballTransform.ValueRO.Position) <= minDistSQ)
-                    {
-                        // Reflect ball
-                        float2 obstToBallDirection = math.normalize(ballTransform.ValueRO.Position - obstacleTransform.ValueRO.Position).xz;
-                        velocity.ValueRW.Value = math.reflect(math.normalize(velocity.ValueRO.Value), obstToBallDirection) * magnitude;
-                        float3 reflectDirection = new float3(velocity.ValueRO.Value.x, 0, velocity.ValueRO.Value.y);
-                        newPosition = ballTransform.ValueRO.Position + reflectDirection * SystemAPI.Time.DeltaTime;
-                        break;
-                    }
+                    // Reflect ball
+                    float2 obstToBallDirection = math.normalize(ballTransform.Position - obstacleTransform.Position).xz;
+                    velocity.Value = math.reflect(math.normalize(velocity.Value), obstToBallDirection) * magnitude;
+                    float3 reflectDirection = new float3(velocity.Value.x, 0, velocity.Value.y);
+                    newPosition = ballTransform.Position + reflectDirection * DeltaTime;
+                    break;
                 }
-
-                ballTransform.ValueRW.Position = newPosition;
-
-                // Decay velocity
-                float decayFactor = config.BallVelocityDecay * SystemAPI.Time.DeltaTime;
-                float newMagnitude = math.max(magnitude - decayFactor, 0);
-                velocity.ValueRW.Value = math.normalizesafe(velocity.ValueRO.Value) * newMagnitude; // math.normalizesafe -> return a default vector if result is not finite
             }
+
+            ballTransform.Position = newPosition;
+
+            // Decay velocity
+            float decayFactor = Config.BallVelocityDecay * DeltaTime;
+            float newMagnitude = math.max(magnitude - decayFactor, 0);
+            velocity.Value = math.normalizesafe(velocity.Value) * newMagnitude; // math.normalizesafe -> return a default vector if result is not finite
         }
     }
 }
