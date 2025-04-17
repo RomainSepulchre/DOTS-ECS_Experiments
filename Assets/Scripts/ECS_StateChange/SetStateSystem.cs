@@ -1,4 +1,4 @@
-using Ionic.Zlib;
+using ECS.StateChange.StateChangeProfilerModule;
 using Project.Utilities;
 using Unity.Burst;
 using Unity.Collections;
@@ -27,8 +27,9 @@ namespace ECS.StateChange
             Config config = SystemAPI.GetSingleton<Config>();
             MouseHit hit = SystemAPI.GetSingleton<MouseHit>();
 
-            if(hit.HitChanged == false)
+            if (hit.HitChanged == false)
             {
+                SystemAPI.GetSingletonRW<StateChangeDemoProfilerModule.FrameData>().ValueRW.SetStatePerf = 0;
                 return;
             }
 
@@ -88,7 +89,7 @@ namespace ECS.StateChange
 
             var conversionRatio = ProfilerUnsafeUtility.TimestampToNanosecondsConversionRatio;
             long elapsed = (after - before) * conversionRatio.Numerator / conversionRatio.Denominator;
-            //SystemAPI.GetSingleton<StateChangeProfilerModule.FrameData>().ValueRW.SetStatePerf = elapsed;
+            SystemAPI.GetSingletonRW<StateChangeDemoProfilerModule.FrameData>().ValueRW.SetStatePerf = elapsed;
         }
     }
 

@@ -1,3 +1,4 @@
+using ECS.StateChange.StateChangeProfilerModule;
 using Project.Utilities;
 using Unity.Burst;
 using Unity.Collections;
@@ -45,7 +46,7 @@ namespace ECS.StateChange
 
             var conversionRatio = ProfilerUnsafeUtility.TimestampToNanosecondsConversionRatio;
             long elapsed = (after - before) * conversionRatio.Numerator / conversionRatio.Denominator;
-            //SystemAPI.GetSingleton<StateChangeProfilerModule.FrameData>().ValueRW.SpinPerf = elapsed;
+            SystemAPI.GetSingletonRW<StateChangeDemoProfilerModule.FrameData>().ValueRW.SpinPerf = elapsed;
         }
     }
 

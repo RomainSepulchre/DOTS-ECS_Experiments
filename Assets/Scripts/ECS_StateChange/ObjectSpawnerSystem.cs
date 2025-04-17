@@ -63,12 +63,11 @@ namespace ECS.StateChange
 
         private bool ConfigEquals(Config a, Config b)
         {
-            bool samePrefab = a.Prefab == b.Prefab;
             bool sameSize = a.Size == b.Size;
             bool sameRadius = a.Radius == b.Radius;
             bool sameMode = a.Mode == b.Mode;
 
-            return samePrefab && sameSize && sameRadius && sameMode;
+            return sameSize && sameRadius && sameMode;
         }
     }
 }
