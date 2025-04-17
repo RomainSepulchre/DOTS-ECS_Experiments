@@ -9,5 +9,9 @@ namespace ECS.StateChange
         public uint Size;
         public float Radius;
         public Mode Mode;
+
+        public bool ChangeMaterial;
+        public Entity ObjWithInitialMat;
+        public Entity ObjWithNewMat;
     }
 }

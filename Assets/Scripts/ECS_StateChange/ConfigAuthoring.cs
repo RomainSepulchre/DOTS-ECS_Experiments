@@ -9,6 +9,11 @@ namespace ECS.StateChange
         public uint size;
         public float radius;
         public Mode mode;
+
+        [Header("Material Swap")]
+        public bool changeMaterial;
+        public GameObject objWithInitialMat;
+        public GameObject objWithNewMat;
     }
 
     class ConfigBaker : Baker<ConfigAuthoring>
@@ -23,6 +28,9 @@ namespace ECS.StateChange
                 Size = authoring.size,
                 Radius = authoring.radius,
                 Mode = authoring.mode,
+                ChangeMaterial = authoring.changeMaterial,
+                ObjWithInitialMat = GetEntity(authoring.objWithInitialMat, TransformUsageFlags.Dynamic),
+                ObjWithNewMat = GetEntity(authoring.objWithNewMat, TransformUsageFlags.Dynamic),
             };
             AddComponent(entity, newConfig);
 
