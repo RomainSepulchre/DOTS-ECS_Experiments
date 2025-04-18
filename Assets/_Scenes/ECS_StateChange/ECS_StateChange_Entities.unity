@@ -149,8 +149,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefab: {fileID: 2206399790030271900, guid: d04085c25db660b49afd2dbe3971f800, type: 3}
-  size: 1000
-  radius: 200
+  size: 10
+  radius: 100
   mode: 3
   changeMaterial: 0
   objWithInitialMat: {fileID: 2206399790030271900, guid: f47e126438cbef749b344fb4de705c7e, type: 3}
