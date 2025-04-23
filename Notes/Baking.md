@@ -91,17 +91,59 @@ class MyComponentBaker : Baker<MyComponentAuthoring>
 }
 ```
 
+### Accessing other data sources in a baker
+
+The incremental baking works because the baker automatically track the data we use when baking the game object. Any field in the authoring component is automatically tracked and the backer re-runs if the data changes. However, the baker does not track data from other sources such as other authoring components or assets.
+
+So, for example if my authoring component has a field that point a `Mesh` component, the baker will track if I change the component linked in the field but it won't track any changes made directly on the linked component.
+
+To fix this issue, in our baker we can use `DependsOn()` to assign a dependency to our baker to tell him he need to track this dependency data.
+
+```c#
+// A simple authoring component with a GameObject field
+public class MyComponentAuthoring : MonoBehaviour
+{
+    public GameObject go;
+}
+
+// The baker takes the authoring class as input and can access its data in the Bake method throught the authoring parameter
+class MyComponentBaker : Baker<MyComponentAuthoring>
+{
+    public override void Bake(MyComponentAuthoring authoring)
+    {
+        // We make the baker dependant on the gameObject linked in our field so the baker re-runs when the gameObject data is updated
+        DependsOn(authoring.go); 
+
+        // By doing this, when checking for missing component on the gameObject the baker will re-run every time I add or remove a component
+        // Otherwise the baker would only have re-run if one of the authoring field has been updated
+        var meshRenderer = GetComponent<MeshRenderer>(authoring.go)
+        if(meshRenderer != null)
+        {
+            // Add a ComponentA when the GameObject has a MeshRenderer
+            Entity entity =  GetEntity(TransformUsageFlags.Dynamic);
+            AddComponent<ComponentA>(entity);
+        }
+    }
+}
+```
+
+>When using `DependsOn()` on an asset, if the asset goes missing while still being linked in a field, when it comes back the call to `DependsOn()` will automatically trigger the baker.
+
+>`GetComponent<>()` also registers a dependency to the required component, so when the component is added or removed the baker is triggered.
+
 ## Baking Systems
 
 A baking system is a system that perform additional operations on the entities processed during the baking.
 
-A baking system is a classic ECS system, the only difference is a baking system is marked a specific baking system attribute (`[WorldSystemFilter(WorldSystemFilterFlags.BakingSystem)]`) that tell they only run during the baking. The features are similar to other ECS systems but their update is only called during a baking.
+A baking system is a classic ECS system, the only difference is a baking system is marked a specific baking system attribute (`[WorldSystemFilter(WorldSystemFilterFlags.BakingSystem)]`) that tell to only run it during the baking. The features are similar to other ECS systems but their update is only called during a baking.
 
 Like other systems, baking systems can be ordered with `[UpdateAfter()]`, `[UpdateBeffore()]` and `[UpdateInGroup()]` attributes. The default groups provided by Unity are:
 - `PreBakingSystemGroup`: Execute before entity creation and bakers (it's the only group that runs before bakers)
 - `TransformBakingSystemGroup`: Run just after the bakers but before `BakingSystemGroup`.
 - `BakingSystemGroup `: Default baking system group 
 - `PostBakingSystemGroup`: Run after `BakingSystemGroup`
+
+Baking Systems can alter their world in any way, they can even create new entities. However, entities created in a baking system will not end up in a baked entity scene. The entities created in a baking system can be used to transfer data between several baking systems but if we want to keep the entity in our baked entity scene we must create it in a baker. In a baker `CreateAdditionalEntity` allow to create and configure an entity to make it work with baking and live baking.
 
 ### Create a baking system
 
@@ -118,8 +160,14 @@ public partial struct MyBakingSystem : ISystem
 
         // We also need to add a way to clean ComponentB because when the ComponentA is removed the entity no longer should have ComponentB on the entity
         // Not doing this would lead to inconsistent results during live baking.
-        EntityQuery cleanQuery = SystemAPI.QueryBuilder().WithAll<ComponentB>().WithNone<ComponentA>().Build();
+        EntityQuery cleanupQuery = SystemAPI.QueryBuilder().WithAll<ComponentB>().WithNone<ComponentA>().Build();
         state.EntityManager.RemoveComponent<ComponentB>(cleanQuery); // Remove the ComponentB on every entity without ComponentA
     }
 }
 ```
+
+### Dependencies with baking systems
+
+Baking systems don't track depedencies and structural changes automatically and we have to declare dependencies explicitely. We also need manually track and revert changes when we add/remove ECS components to keep a coherent incremental baking.
+
+That's the reason why, in the previous example, we have a *cleanupQuery* that ensure we remove the added component if the entity no longer meet the requirement.
