@@ -6,6 +6,8 @@ Summary:
 - [What is baking ?](#what-is-baking-)
 - [Baker](#baker)
 - [Baking Systems](#baking-systems)
+- [Baking Worlds](#baking-worlds)
+- [Filter baking output](#filter-baking-output)
 
 Resources links:
 - [Baking Unity doucmentation](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/baking.html)
@@ -171,3 +173,28 @@ public partial struct MyBakingSystem : ISystem
 Baking systems don't track depedencies and structural changes automatically and we have to declare dependencies explicitely. We also need manually track and revert changes when we add/remove ECS components to keep a coherent incremental baking.
 
 That's the reason why, in the previous example, we have a *cleanupQuery* that ensure we remove the added component if the entity no longer meet the requirement.
+
+## Baking Worlds
+
+Entity scenes are baked in isolation and one scene is processed at a time. When entity scenes are opened in the editor and are live baked, unity use separate worlds to isolate entity scene from each other.
+
+Each live baked subscene relies on 2 worlds:
+- *Conversion world*: it's the world where the baking is happening, the bakers and the baking systems run here. To limit the work done by the live baking, the result of the baking stays in the conversion world as long as the subscene is openned.
+- *Shadow world*: a world with a copy of the previous baking output. After a new baking, the shadow world is compared with the new baking output to see what changed and only the ECS components affected by the changes are copied to the main world.
+
+## Filter baking output
+
+By default, any game object in a subscene will be converted to entity in the conversion world and be part of the output baking. However, sometimes some game objects from the authoring scene are not relevant as entity in the baked scene (ex: control points for a spline).
+
+### Filter entity
+
+When a game object is not relevant in the baking output, it's possible to exclude its entity from the baking output by adding a `BakingOnlyEntity` tag component to an entity in a baker (or by adding `BakingOnlyEntityAuthoring` on the game object), the entity isn't stored in the entity scene and is never merged to the main world.
+
+### Filter components
+
+It's also possible to exclude components by using a baking type attribute:
+    - `[BakingType]`: any component marked with this attribute is filtered out of the baking output.
+    - `[TemporaryBakingType]`: any component marked with this attribute is destroyed from the baking output. This means the component will not remain from one baking pass to the next.
+
+
+
