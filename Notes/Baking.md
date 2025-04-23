@@ -186,6 +186,8 @@ Each live baked subscene relies on 2 worlds:
 
 By default, any game object in a subscene will be converted to entity in the conversion world and be part of the output baking. However, sometimes some game objects from the authoring scene are not relevant as entity in the baked scene (ex: control points for a spline).
 
+> ***? When testing it seems that a gameObjects need to have at least one authoring component to be converted to entity, did I miss something ?***
+
 ### Filter entity
 
 When a game object is not relevant in the baking output, it's possible to exclude its entity from the baking output by adding a `BakingOnlyEntity` tag component to an entity in a baker (or by adding `BakingOnlyEntityAuthoring` on the game object), the entity isn't stored in the entity scene and is never merged to the main world.
@@ -194,7 +196,7 @@ When a game object is not relevant in the baking output, it's possible to exclud
 
 It's also possible to exclude components by using a baking type attribute:
     - `[BakingType]`: any component marked with this attribute is filtered out of the baking output.
-    - `[TemporaryBakingType]`: any component marked with this attribute is destroyed from the baking output. This means the component will not remain from one baking pass to the next.
+    - `[TemporaryBakingType]`: any component marked with this attribute is destroyed from the baking output. This means the component will not remain from one baking pass to the next or to spell it differently the component marked with `[TemporaryBakingType]` will only exist when the baker that adds it has run in the same baking pass. So a baking system that require a temporary baked component will only run when something force the baker that add the temporary baked component to re-bake (ex: change in the inputs data).
 
 
 

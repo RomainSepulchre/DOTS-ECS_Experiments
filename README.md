@@ -57,6 +57,8 @@
     - [What is baking ?](Notes/Baking.md#what-is-baking-)
     - [Baker](Notes/Baking.md#baker)
     - [Baking Systems](Notes/Baking.md#baking-systems)
+    - [Baking Worlds](Notes/Baking.md#baking-worlds)
+    - [Filter baking output](Notes/Baking.md#filter-baking-output)
 - [Other Notes](Notes/OtherNotes.md)
     - [Array binary search](Notes/OtherNotes.md#array-binary-search)
     - [Comparer, IComparer<T> interfaces](Notes/OtherNotes.md#icomparer-icomparer-comparer-and-icomparable)
