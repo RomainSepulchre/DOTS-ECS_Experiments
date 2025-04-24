@@ -198,5 +198,126 @@ It's also possible to exclude components by using a baking type attribute:
     - `[BakingType]`: any component marked with this attribute is filtered out of the baking output.
     - `[TemporaryBakingType]`: any component marked with this attribute is destroyed from the baking output. This means the component will not remain from one baking pass to the next or to spell it differently the component marked with `[TemporaryBakingType]` will only exist when the baker that adds it has run in the same baking pass. So a baking system that require a temporary baked component will only run when something force the baker that add the temporary baked component to re-bake (ex: change in the inputs data).
 
+## Prefab baking
 
+During the baking, gameObjects prefabs are baked into entity prefabs. An entity prefab is an entity with the following components:
+- `Prefab` component tag (identify the entity as a prefab and exclude it from default queries),
+- `LinkedEntityGroup` buffer (Stores the prefab childrens in a flat list, it allows to quickly create the whole set of entity without having to go through all the hierarchy).
 
+Entity prefabs works like game objects prefabs. As long as they have been baked and are available in the entity scene, entity prefabs can be instantiated at runtime.
+
+> Prefabs that are already in the subscene hierarchy are considered as normal game objects (they don't have the `Prefab` tag and the `LinkedEntityGroup` buffer).
+
+### Bake a prefab
+
+To ensure a prefab is baked and available in the entity scene thay must be registered into a baker. Registering a prefab only require to call `GetEntity(GameObject prefab, TransformUsageFlags)`, however to instantiate it later it's better to store the entity prefab in a component.
+
+```c#
+// A component to store the prefab
+public struct EntityPrefabComponent : IComponentData
+{
+    public Entity Value;
+}
+
+// Authoring component class with input GameObject prefab
+public class GetPrefabAuthoring : MonoBehaviour
+{
+    public GameObject Prefab;
+}
+
+// A baker where the prefab is registered
+public class GetPrefabBaker : Baker<GetPrefabAuthoring>
+{
+    public override void Bake(GetPrefabAuthoring authoring)
+    {
+        // Register the Prefab in the Baker
+        Entity entityPrefab = GetEntity(authoring.Prefab, TransformUsageFlags.Dynamic);
+
+        // Store the entity in a component to instantiate it later
+        Entity entity = GetEntity(TransformUsageFlags.None);
+        AddComponent(entity, new EntityPrefabComponent() {Value = entityPrefab});
+    }
+}
+```
+
+When an entity prefab will be used in several subscene it can be stored in an `EntityPrefabReference` struct. By doing this, the ECS content of the prefab is serialized into a separate entity scene that can be loaded at runtime when we need to use the prefab. This allows us to avoid a duplication of the entity prefab in every subscene where it is used.
+
+```c#
+// A component to store the prefab reference
+public struct EntityPrefabReferenceComponent : IComponentData
+{
+    public EntityPrefabReference Value;
+}
+
+// Authoring component class with input GameObject prefab
+public class GetPrefabReferenceAuthoring : MonoBehaviour
+{
+    public GameObject Prefab;
+}
+
+// A baker that registers the EntityPrefabReference
+public class GetPrefabReferenceBaker : Baker<GetPrefabReferenceAuthoring>
+{
+    public override void Bake(GetPrefabReferenceAuthoring authoring)
+    {
+        // When an EntityPrefabReference is created from a GameObject, the prefab is serialized in its own entity scene file to avoid prefab duplication
+        EntityPrefabReference entityPrefab = new EntityPrefabReference(authoring.Prefab);
+
+        // Store the EntityPrefabReference in a component to instantiate it later
+        Entity entity = GetEntity(TransformUsageFlags.None);
+        AddComponent(entity, new EntityPrefabReferenceComponent() {Value = entityPrefab});
+    }
+}
+```
+
+### Instantiate a prefab
+
+To instantiate a prefab we use the `EntityManager` or an `EntityCommandBuffer`:
+
+- `EntityManager`: use `EntityManager.Instantiate()`, can only be used on the main thread since it triggers a structural change.
+- `EntityCommandBuffer`: record a `EntityCommandBuffer.Instantiate()` command in an `EntityCommandBuffer` to playback it later, can be used on the main thread or in a job. [See this fore more info on EntityCommandBuffer](JobsWithECS.md#entity-command-buffer).
+
+> Instantiated prefabs contain a `SceneSection` component that could affect the lifetime of entities
+
+#### Instantiate from an EntityPrefabReference
+
+To instantiate a prefab by using a `EntityPrefabReference` we need to make sure the prefab is loaded before we can use it since it is serialized into a separate entity scene.
+
+To do that we must add the `RequestEntityPrefabLoaded` component to the entities that contains a `EntityPrefabReference`. This component make sure the prefab is loaded and store the result of the loading into a `PrefabLoadResult` component (this component is automatically added to the entity that has `RequestEntityPrefabLoaded`).
+
+```c#
+public partial struct InstantiatePrefabReferenceSystem : ISystem
+{
+    public void OnStartRunning(ref SystemState state)
+    {
+        // Add the RequestEntityPrefabLoaded component to the Entities that have an
+        // EntityPrefabReference but not yet have the PrefabLoadResult
+        // (the PrefabLoadResult is added when the prefab is loaded)
+        // Note: it might take a few frames for the prefab to be loaded
+        var query = SystemAPI.QueryBuilder()
+            .WithAll<EntityPrefabComponent>()
+            .WithNone<PrefabLoadResult>().Build();
+        state.EntityManager.AddComponent<RequestEntityPrefabLoaded>(query);
+    }
+
+    public void OnUpdate(ref SystemState state)
+    {
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+
+        // For the Entities that have a PrefabLoadResult component (Unity has loaded
+        // the prefabs) get the loaded prefab from PrefabLoadResult and instantiate it
+        foreach (var (prefab, entity) in SystemAPI.Query<RefRO<PrefabLoadResult>>().WithEntityAccess())
+        {
+            var instance = ecb.Instantiate(prefab.ValueRO.PrefabRoot);
+
+            // Remove both RequestEntityPrefabLoaded and PrefabLoadResult to prevent
+            // the prefab being loaded and instantiated multiple times, respectively
+            ecb.RemoveComponent<RequestEntityPrefabLoaded>(entity);
+            ecb.RemoveComponent<PrefabLoadResult>(entity);
+        }
+
+        ecb.Playback(state.EntityManager);
+        ecb.Dispose();
+    }
+}
+```

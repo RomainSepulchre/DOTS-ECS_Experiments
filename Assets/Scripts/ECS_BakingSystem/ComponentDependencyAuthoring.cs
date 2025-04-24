@@ -1,4 +1,5 @@
 using Unity.Entities;
+using Unity.Entities.Serialization;
 using UnityEngine;
 
 namespace ECS.BakingSystem
@@ -41,6 +42,20 @@ namespace ECS.BakingSystem
             }
 
             Entity entity = GetEntity(TransformUsageFlags.None);
+
+            // To register prefab and ahve it in entities hierarchy
+            GetEntity(authoring.go, TransformUsageFlags.None);
+            //Entity prefab = GetEntity(authoring.go, TransformUsageFlags.None);
+
+            // Prefab ref
+            EntityPrefabReference prefabRef = new EntityPrefabReference(authoring.go);
+            AddComponent(entity, new PrefabReference { Value = prefabRef });
         }
     }
+
+    public struct PrefabReference : IComponentData
+    {
+        public EntityPrefabReference Value;
+    }
+
 }
