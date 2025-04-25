@@ -286,32 +286,30 @@ To instantiate a prefab by using a `EntityPrefabReference` we need to make sure 
 To do that we must add the `RequestEntityPrefabLoaded` component to the entities that contains a `EntityPrefabReference`. This component make sure the prefab is loaded and store the result of the loading into a `PrefabLoadResult` component (this component is automatically added to the entity that has `RequestEntityPrefabLoaded`).
 
 ```c#
-public partial struct InstantiatePrefabReferenceSystem : ISystem
+public partial struct InstantiatePrefabReferenceSystem : ISystem, ISystemStartStop
 {
     public void OnStartRunning(ref SystemState state)
-    {
-        // Add the RequestEntityPrefabLoaded component to the Entities that have an
-        // EntityPrefabReference but not yet have the PrefabLoadResult
-        // (the PrefabLoadResult is added when the prefab is loaded)
-        // Note: it might take a few frames for the prefab to be loaded
-        var query = SystemAPI.QueryBuilder()
-            .WithAll<EntityPrefabComponent>()
-            .WithNone<PrefabLoadResult>().Build();
+    {       
+        // Query all entities with a component that store an EntityPrefabReference and doesn't have a PrefabLoadResult yet
+        EntityQuery query = SystemAPI.QueryBuilder().WithAll<EntityPrefabComponent>().WithNone<PrefabLoadResult>().Build();
+
+        // ?? WEIRD THINGS ARE HAPPENING AT THIS STEP WHEN I'M TRYING TO TEST THE CODE ??
+        // Add to all entity in the query a RequestEntityPrefabLoaded component to load the prefab
         state.EntityManager.AddComponent<RequestEntityPrefabLoaded>(query);
+        // After doing this unity load the prefab and store them in a PrefabLoadResult component on the entity
+        // Note: it might take a few frames for the prefab to be loaded
     }
 
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-        // For the Entities that have a PrefabLoadResult component (Unity has loaded
-        // the prefabs) get the loaded prefab from PrefabLoadResult and instantiate it
+        // For every entities with a loaded prefab result instantiate the prefab
         foreach (var (prefab, entity) in SystemAPI.Query<RefRO<PrefabLoadResult>>().WithEntityAccess())
         {
             var instance = ecb.Instantiate(prefab.ValueRO.PrefabRoot);
 
-            // Remove both RequestEntityPrefabLoaded and PrefabLoadResult to prevent
-            // the prefab being loaded and instantiated multiple times, respectively
+            // Remove both RequestEntityPrefabLoaded and PrefabLoadResult to prevent the prefab being loaded and instantiated multiple times, respectively
             ecb.RemoveComponent<RequestEntityPrefabLoaded>(entity);
             ecb.RemoveComponent<PrefabLoadResult>(entity);
         }

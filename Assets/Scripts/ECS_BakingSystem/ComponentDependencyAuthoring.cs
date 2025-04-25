@@ -42,20 +42,8 @@ namespace ECS.BakingSystem
             }
 
             Entity entity = GetEntity(TransformUsageFlags.None);
-
             // To register prefab and ahve it in entities hierarchy
-            GetEntity(authoring.go, TransformUsageFlags.None);
-            //Entity prefab = GetEntity(authoring.go, TransformUsageFlags.None);
-
-            // Prefab ref
-            EntityPrefabReference prefabRef = new EntityPrefabReference(authoring.go);
-            AddComponent(entity, new PrefabReference { Value = prefabRef });
+            //GetEntity(authoring.go, TransformUsageFlags.None);
         }
     }
-
-    public struct PrefabReference : IComponentData
-    {
-        public EntityPrefabReference Value;
-    }
-
 }
