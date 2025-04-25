@@ -285,7 +285,14 @@ To instantiate a prefab by using a `EntityPrefabReference` we need to make sure 
 
 To do that we must add the `RequestEntityPrefabLoaded` component to the entities that contains a `EntityPrefabReference`. This component make sure the prefab is loaded and store the result of the loading into a `PrefabLoadResult` component (this component is automatically added to the entity that has `RequestEntityPrefabLoaded`).
 
+
 ```c#
+//
+// ?? WEIRD THINGS ARE HAPPENING WHEN I'M TRYING TO TEST THE CODE ??
+// - It seems RequestEntityPrefabLoaded doesn't automatically get our EntityPrefabReference like the sample code suggest
+// - When setting RequestEntityPrefabLoaded manually, the prefab scene loading fails (Exception: (Loading Entity Scene failed because the entity header file couldn't be resolved.))
+// -> Its look like the doc is outdated or is incomplete
+//
 public partial struct InstantiatePrefabReferenceSystem : ISystem, ISystemStartStop
 {
     public void OnStartRunning(ref SystemState state)
@@ -293,7 +300,7 @@ public partial struct InstantiatePrefabReferenceSystem : ISystem, ISystemStartSt
         // Query all entities with a component that store an EntityPrefabReference and doesn't have a PrefabLoadResult yet
         EntityQuery query = SystemAPI.QueryBuilder().WithAll<EntityPrefabComponent>().WithNone<PrefabLoadResult>().Build();
 
-        // ?? WEIRD THINGS ARE HAPPENING AT THIS STEP WHEN I'M TRYING TO TEST THE CODE ??
+        
         // Add to all entity in the query a RequestEntityPrefabLoaded component to load the prefab
         state.EntityManager.AddComponent<RequestEntityPrefabLoaded>(query);
         // After doing this unity load the prefab and store them in a PrefabLoadResult component on the entity
