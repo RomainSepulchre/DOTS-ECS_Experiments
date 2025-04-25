@@ -201,8 +201,13 @@ It's also possible to exclude components by using a baking type attribute:
 ## Prefab baking
 
 During the baking, gameObjects prefabs are baked into entity prefabs. An entity prefab is an entity with the following components:
-- `Prefab` component tag (identify the entity as a prefab and exclude it from default queries),
+- `Prefab` component tag (identify the entity as a prefab and exclude it from queries by default),
 - `LinkedEntityGroup` buffer (Stores the prefab childrens in a flat list, it allows to quickly create the whole set of entity without having to go through all the hierarchy).
+
+By default, all entities with the `Prefab` tag are excluded from query but they can be included back by using the query option `EntityQueryOptions.IncludePrefab`:
+```C#
+EntityQuery queryWithPrefab = SystemAPI.QueryBuilder().WithAll<ComponentA>.WithOptions(EntityQueryOptions.IncludePrefab).Build();
+```
 
 Entity prefabs works like game objects prefabs. As long as they have been baked and are available in the entity scene, entity prefabs can be instantiated at runtime.
 
@@ -326,3 +331,7 @@ public partial struct InstantiatePrefabReferenceSystem : ISystem, ISystemStartSt
     }
 }
 ```
+
+### Destroy prefab instances
+
+Prefab instances are destroyed like any other entity, by using the `EntityManager` or an `EntityCOmmandBuffer` to call `.DestroyEntity()`
