@@ -285,11 +285,11 @@ To instantiate a prefab by using a `EntityPrefabReference` we need to make sure 
 
 To do that we must add the `RequestEntityPrefabLoaded` component to the entities that contains a `EntityPrefabReference`. This component make sure the prefab is loaded and store the result of the loading into a `PrefabLoadResult` component (this component is automatically added to the entity that has `RequestEntityPrefabLoaded`).
 
-
+=>  Check unity ECS samples project to see if there is a working example of this
 ```c#
 //
 // ?? WEIRD THINGS ARE HAPPENING WHEN I'M TRYING TO TEST THE CODE ??
-// - It seems RequestEntityPrefabLoaded doesn't automatically get our EntityPrefabReference like the sample code suggest
+// - It seems RequestEntityPrefabLoaded doesn't automatically get our EntityPrefabReference like the doc sample code suggest
 // - When setting RequestEntityPrefabLoaded manually, the prefab scene loading fails (Exception: (Loading Entity Scene failed because the entity header file couldn't be resolved.))
 // -> Its look like the doc is outdated or is incomplete
 //
