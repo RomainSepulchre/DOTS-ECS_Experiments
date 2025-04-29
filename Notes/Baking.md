@@ -8,6 +8,7 @@ Summary:
 - [Baking Systems](#baking-systems)
 - [Baking Worlds](#baking-worlds)
 - [Filter baking output](#filter-baking-output)
+- [Prefab baking](#prefab-baking)
 
 Resources links:
 - [Baking Unity doucmentation](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/baking.html)
@@ -290,14 +291,20 @@ To instantiate a prefab by using a `EntityPrefabReference` we need to make sure 
 
 To do that we must add the `RequestEntityPrefabLoaded` component to the entities that contains a `EntityPrefabReference`. This component make sure the prefab is loaded and store the result of the loading into a `PrefabLoadResult` component (this component is automatically added to the entity that has `RequestEntityPrefabLoaded`).
 
-=>  Check unity ECS samples project to see if there is a working example of this
 ```c#
 //
-// ?? WEIRD THINGS ARE HAPPENING WHEN I'M TRYING TO TEST THE CODE ??
-// - It seems RequestEntityPrefabLoaded doesn't automatically get our EntityPrefabReference like the doc sample code suggest
-// - When setting RequestEntityPrefabLoaded manually, the prefab scene loading fails (Exception: (Loading Entity Scene failed because the entity header file couldn't be resolved.))
-// -> Its look like the doc is outdated or is incomplete
+// WEIRD ISSUE FIXED
+// - It seems RequestEntityPrefabLoaded doesn't automatically get our EntityPrefabReference like the doc sample code suggest => in the ECS sample unity project, there is an example where they manually assign the prefab reference to the RequestEntityPrefabLoaded created.
+// - When setting RequestEntityPrefabLoaded manually, the prefab scene loading fails (Exception: (Loading Entity Scene failed because the entity header file couldn't be resolved.)) => Not sure why this error happenned in the first place but clearing the entity cache fixed the issue (Preferences > entities > Clear Entity Cache)
 //
+
+// The component that store our EntityPrefabReference, the value is set in a dedicated authoring script like shown previously in Bake a prefab section
+public struct PrefabReference : IComponentData
+{
+    public EntityPrefabReference Value;
+}
+
+// The system that load and instantiate the entity prefab reference
 public partial struct InstantiatePrefabReferenceSystem : ISystem, ISystemStartStop
 {
     public void OnStartRunning(ref SystemState state)
@@ -307,9 +314,21 @@ public partial struct InstantiatePrefabReferenceSystem : ISystem, ISystemStartSt
 
         
         // Add to all entity in the query a RequestEntityPrefabLoaded component to load the prefab
-        state.EntityManager.AddComponent<RequestEntityPrefabLoaded>(query);
+        NativeArray<PrefabReference> prefabReferences = query.ToComponentDataArray<PrefabReference>(Allocator.Temp);
+        NativeArray<Entity> entities = query.ToEntityArray(Allocator.Temp);
+
+        for (int i = 0; i < entities.Count(); i++)
+        {
+            // The Prefab field of RequestEntityPrefabLoaded must be set with the EntityPrefabReference stored in PrefabReference
+            RequestEntityPrefabLoaded requestEntityPrefabLoaded = new RequestEntityPrefabLoaded()
+            {
+                Prefab = prefabReferences[i].Value
+            };
+            state.EntityManager.AddComponentData(entities[i], requestEntityPrefabLoaded);
+        }
         // After doing this unity load the prefab and store them in a PrefabLoadResult component on the entity
         // Note: it might take a few frames for the prefab to be loaded
+        // -> It actually takes an abnormal amount of time when doing the loading in OnStartRunning compared to when it is done in the OnUpdate of a dedicated system 
     }
 
     public void OnUpdate(ref SystemState state)
@@ -332,6 +351,64 @@ public partial struct InstantiatePrefabReferenceSystem : ISystem, ISystemStartSt
 }
 ```
 
+=> Add note on common error I faced:
+- Entity.null = prefabReference value was not set on RequestEntityPrefabLoaded
+- Loading Entity Scene failed because the entity header file couldn't be resolved. = Clear entity cache to fixed the issue (Preferences > entities > Clear Entity Cache)
+
 ### Destroy prefab instances
 
 Prefab instances are destroyed like any other entity, by using the `EntityManager` or an `EntityCOmmandBuffer` to call `.DestroyEntity()`
+
+### LinkedEntityGroup
+
+A `LinkedEntityGroup` is a Dynamic Buffer with a special semantic:
+- Instantiating (`EntityManager.Instantiate`): Instantiate all the entities in the `LinkedEntityGroup`.
+- Destroying (`EntityManager.Instantiate`): Destroys all the entities in the `LinkedEntityGroup`.
+- Enabling/Disabling (`EntityManager.SetEnabled`): Add/Remove the `Disabled` component tag on all the entities in the `LinkedEntityGroup`.
+
+> The first element of a `LinkedEntityGroup` must alway be the entity with the `LinkedEntityGroup` buffer.
+
+A `LinkedEntityGroup` and a transform hierarchy are two different concepts:
+- Adding a children on an entity with a `LinkedEntityGroup` will not add it in the `LinkedEntityGroup`
+- Removing an entity from a `LinkedEntityGroup` doesn't remove it from the childrens off the parent entity.
+
+`LinkedEntityGroup` are not processed recursively, when processing a `LinkedEntityGroup` if it contains an entity with another `LinkedEntityGroup`, this second buffer will not be processed. Only the content of the processed `LinkedEntityGroup` is actually processed. It's recommended to avoid nested group to prevent any confusion.
+
+#### Add an entity to a LinkedEntityGroup
+
+To add a new entity in a `LinkedEntityGroup` we first need to add the corresponding scene tag shared component (from the entity that has the LinkedEntityGroup), if needed we can then add a Parent component to make the new entity a children in the transform hierarchy. Finally, we can add our entity in the `LinkedEntityGroup` buffer.
+
+```c#
+// In a ISystem
+public void OnUpdate(ref SystemState state)
+{
+    // Get the entity with the LinkedEntityGroup we want to modify
+    EntityQuery query = SystemAPI.QueryBuilder().WithAll<MyComponent>().WithAll<LinkedEntityGroup>().Build();
+    NativeArray<Entity> entity = query.ToEntityArray(Allocator.Temp);
+
+    // Create the new entity
+    Entity newChild = state.EntityManager.CreateEntity();
+
+    // Get the SceneTag from the entity with the LinkedEntityGroup and add ot to our new children
+    SceneTag sceneTag = state.EntityManager.GetSharedComponent<SceneTag>(entity[0]); 
+    state.EntityManager.AddSharedComponent<SceneTag>(child, sceneTag);
+
+    // If needed, add a Parent component to make the new entity a child in the transform hierarchy 
+    state.EntityManager.AddComponentData(child, new Parent { Value = entity[0] });
+
+    // Get the LinkedEntityGroup and add the new child entity
+    LinkedEntityGroup leg = SystemAPI.GetBuffer<LinkedEntityGroup>(entity[0]);
+    leg.Add(child);
+
+    // Disable system to only do this once 
+    state.Enabled = false;
+}
+```
+
+> Making sure the new entity has the correct scene tag is really important because unity use it when it unloads an entity scene to identify the entity that should be destroyed. [See the next section about LinkedEntityGroup destruction for more info](#destroy-entities-from-a-linkedentitygroup).
+
+#### Destroy entities from a LinkedEntityGroup
+
+A `LinkedEntityGroup` must only contains valid entities, if an entity part of a `LinkedEntityGroup` is destroyed individually it must also be manually removed from the group.
+
+When using a query to destroy entities, the content of a `LinkedEntityGroup` can't partially match the query: all the entities in the `LinkedEntityGroup` must match the query otherwise it's like none of them match. That's especially relevant when using entity scenes: Unity use the scene tag shared component to identify entities that must be destroyed when a scene is unloaded. If the scene tag of an entity that is part of a `LinkedEntityGroup` has not been set correctly, the `LinkedEntityGroup` will not a full match with the query and the entities in the `LinkedEntityGroup` will not be destroyed.

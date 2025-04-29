@@ -7,7 +7,7 @@ namespace ECS.BakingSystem
 {
     public class EntityPrefabRefAuthoring : MonoBehaviour
     {
-        public GameObject go;
+        public GameObject prefab;
     }
 
     class EntityPrefabRefBaker : Baker<EntityPrefabRefAuthoring>
@@ -19,16 +19,16 @@ namespace ECS.BakingSystem
             //Entity prefab = GetEntity(authoring.go, TransformUsageFlags.None);
 
             // Prefab ref
-            EntityPrefabReference prefabRef = new EntityPrefabReference(authoring.go);
-            AddComponent(entity, new PrefabReference() { Value = prefabRef });
-
-            // When doing this RequestEntityPrefabLoaded seems to work without error but this seems bad to do -> it worked until the subscene becomae impossible to reload
-            //AddComponent<RequestEntityPrefabLoaded>(entity, new RequestEntityPrefabLoaded() { Prefab = prefabRef } );
+            EntityPrefabReference prefabRef = new EntityPrefabReference(authoring.prefab);
+            AddComponent(entity, new PrefabReference()
+            {
+                Prefab = prefabRef,
+            });
         }
     }
 
     public struct PrefabReference : IComponentData
     {
-        public EntityPrefabReference Value;
+        public EntityPrefabReference Prefab;
     }
 }
