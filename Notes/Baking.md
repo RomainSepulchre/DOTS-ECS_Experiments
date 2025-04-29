@@ -9,6 +9,7 @@ Summary:
 - [Baking Worlds](#baking-worlds)
 - [Filter baking output](#filter-baking-output)
 - [Prefab baking](#prefab-baking)
+- [Scenes](#scenes)
 
 Resources links:
 - [Baking Unity doucmentation](https://docs.unity3d.com/Packages/com.unity.entities@1.3/manual/baking.html)
@@ -420,3 +421,46 @@ public void OnUpdate(ref SystemState state)
 A `LinkedEntityGroup` must only contains valid entities, if an entity part of a `LinkedEntityGroup` is destroyed individually it must also be manually removed from the group.
 
 When using a query to destroy entities, the content of a `LinkedEntityGroup` can't partially match the query: all the entities in the `LinkedEntityGroup` must match the query otherwise it's like none of them match. That's especially relevant when using entity scenes: Unity use the scene tag shared component to identify entities that must be destroyed when a scene is unloaded. If the scene tag of an entity that is part of a `LinkedEntityGroup` has not been set correctly, the `LinkedEntityGroup` will not a full match with the query and the entities in the `LinkedEntityGroup` will not be destroyed.
+
+## Scenes
+
+When working with ECS, we use 3 differents types of scenes:
+- **Authoring scene**: A scene that we can open and edit (like a normal scene) that is destined to be baked. It contains gameObjects and monobehaviour components (authoring components) that will be converted into entities and entity components during the baking.
+- **Entity scene**: A scene that is the result of the baking of an authoring scene. It only contains ECS Data (entities and entity components).
+- **Subscene**: A subscene is a reference to an authoring or entity scene. It's a gameObject component that allows to load a scene either in its gameObject authoring representation (for editing) or as its ECS representation (read-only but performant). Subscenes can be confused with entity scenes but they are just an attachment point to easily load an entity scene.
+
+### Scene Streaming
+
+Since loading large scenes can take several frames, the scene loading is done asynchronously to avoid stall. This is called **streaming**.
+
+**Streaming advantages and disadvantage:**
+- (+) Application stays responsive since scene are streamed in the background.
+- (+) Scene can be dynamically loaded/unloaded in large seamless worlds (larger than what the memory can actually fit) with no gameplay interruptions.
+- (+) In play mode, even if an entity scene file is missing or outdated the editor remain responsive since the baking an loading happen asynchronously in a different process.
+- (-) The app can't assume some scene is present especially at startup which makes a code a bit mre complicated.
+- (-) Scene are loaded from the scene system group (that is part of Initialization group), so only systems that updateds later in the same frame will the loaded data this frame, systems updated earlier will only receive the data next frame. Our code might need to take this into consideration.
+
+### Load a scene
+
+When we need to load a scene we can use a subscene placed in the main scene or use the [`SceneSystem`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Scenes.SceneSystem.html) API to load the scene from code.
+
+The static method to load a scene asynchronously is `SceneSystem.LoadSceneAsync()`. This can only be done in the `OnUpdate()` method of a system.
+
+All the versions of that method need to receive a unique identifier as parameter to know which scene must be loaded.  
+This unique identifier must be one of the following:
+- An [`EntitySceneReference`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.Serialization.EntitySceneReference.html).
+- **NOT RECOMMENDED**, a [`Hash128`](https://docs.unity3d.com/Packages/com.unity.entities@1.3/api/Unity.Entities.Hash128.html) GUID.
+- A `scene meta Entity`.
+
+> Using a GUID is not recommended because the build process only detects authoring scene referenced by subscene or `EntitySceneReference`, meaning their entity scenes will be missing from the builds.
+
+When an `EntitySceneReference` or a `Hash128` GUID is used as parameter to load a scene, `SceneSystem.LoadSceneAsync()` returns the  `scene meta Entity`. This can be in subsequent calls to refer to the scene and is very useful to unload and reload the content of scene for example.
+
+### Advice: Split big scene in several smaller scenes
+
+When a project has a large amount of data it may be hard for Unity to process it if all the data is within a single authoring scene. The issue isn't the number of entities, Unity can handle millions of them, it is their GameObjects representation that could force the editor to stall. With large amount of data, it's more efficient to keep authoring data into several smaller authoring scenes.
+
+For example, in the [Megacity project sample](https://github.com/Unity-Technologies/Megacity-2019), each building is in a separate subscene to efficiently manage their gameObject representation but we can still load the whole city.
+
+In some case , when working in a small environment, a single authoring scene is enough but in general multiple authoring scene can easily be baked independantly and loaded together.
+
