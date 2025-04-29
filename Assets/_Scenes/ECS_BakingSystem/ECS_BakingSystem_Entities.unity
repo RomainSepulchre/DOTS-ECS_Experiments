@@ -413,7 +413,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d036ec13ff99924d87745708fe2ac10, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnInterval: 1
+  spawnInterval: 2.5
+  loadPrefabRefInSeparateSystem: 1
+  removeLoadComponentsAfterInstantiation: 0
 --- !u!1 &747071228
 GameObject:
   m_ObjectHideFlags: 0
@@ -1808,7 +1810,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefab: {fileID: 1936567685708060535, guid: 3dba38a0b985d3d4e9c07ab36cb50865, type: 3}
-  spawnInterval: 1
 --- !u!4 &1878760766
 Transform:
   m_ObjectHideFlags: 0

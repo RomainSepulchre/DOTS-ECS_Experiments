@@ -292,32 +292,29 @@ To instantiate a prefab by using a `EntityPrefabReference` we need to make sure 
 To do that we must add the `RequestEntityPrefabLoaded` component to the entities that contains a `EntityPrefabReference`. This component make sure the prefab is loaded and store the result of the loading into a `PrefabLoadResult` component (this component is automatically added to the entity that has `RequestEntityPrefabLoaded`).
 
 ```c#
-//
-// WEIRD ISSUE FIXED
-// - It seems RequestEntityPrefabLoaded doesn't automatically get our EntityPrefabReference like the doc sample code suggest => in the ECS sample unity project, there is an example where they manually assign the prefab reference to the RequestEntityPrefabLoaded created.
-// - When setting RequestEntityPrefabLoaded manually, the prefab scene loading fails (Exception: (Loading Entity Scene failed because the entity header file couldn't be resolved.)) => Not sure why this error happenned in the first place but clearing the entity cache fixed the issue (Preferences > entities > Clear Entity Cache)
-//
-
 // The component that store our EntityPrefabReference, the value is set in a dedicated authoring script like shown previously in Bake a prefab section
 public struct PrefabReference : IComponentData
 {
     public EntityPrefabReference Value;
 }
 
-// The system that load and instantiate the entity prefab reference
-public partial struct InstantiatePrefabReferenceSystem : ISystem, ISystemStartStop
+// A system to load prefab reference 
+public partial struct LoadPrefabReferenceSystem : ISystem
 {
-    public void OnStartRunning(ref SystemState state)
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
     {       
-        // Query all entities with a component that store an EntityPrefabReference and doesn't have a PrefabLoadResult yet
-        EntityQuery query = SystemAPI.QueryBuilder().WithAll<EntityPrefabComponent>().WithNone<PrefabLoadResult>().Build();
+        // Only run thsi system update once
+        state.Enabled = false;
 
-        
-        // Add to all entity in the query a RequestEntityPrefabLoaded component to load the prefab
+        // Query the entities with an EntityPrefabReference to load
+        EntityQuery query = SystemAPI.QueryBuilder().WithAll<PrefabReference>().WithNone<PrefabLoadResult>().Build();
+    
+        //  When adding RequestEntityPrefabLoaded we set its prefab value with the EntityPrefabReference to load
         NativeArray<PrefabReference> prefabReferences = query.ToComponentDataArray<PrefabReference>(Allocator.Temp);
         NativeArray<Entity> entities = query.ToEntityArray(Allocator.Temp);
 
-        for (int i = 0; i < entities.Count(); i++)
+        for (int i = 0; i < entities.Length; i++)
         {
             // The Prefab field of RequestEntityPrefabLoaded must be set with the EntityPrefabReference stored in PrefabReference
             RequestEntityPrefabLoaded requestEntityPrefabLoaded = new RequestEntityPrefabLoaded()
@@ -326,21 +323,33 @@ public partial struct InstantiatePrefabReferenceSystem : ISystem, ISystemStartSt
             };
             state.EntityManager.AddComponentData(entities[i], requestEntityPrefabLoaded);
         }
+
         // After doing this unity load the prefab and store them in a PrefabLoadResult component on the entity
         // Note: it might take a few frames for the prefab to be loaded
-        // -> It actually takes an abnormal amount of time when doing the loading in OnStartRunning compared to when it is done in the OnUpdate of a dedicated system 
+        // -> The loading is abnormally longer when done in OnStartRunning() compared to when it's done in dedicated like we do here
+    }
+}
+
+// The system that instantiate the loaded entity prefab
+public partial struct InstantiatePrefabReferenceSystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        // Only update this system when there is at least one PrefabLoadResult
+        state.RequireForUpdate<PrefabLoadResult>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-        // For every entities with a loaded prefab result instantiate the prefab
-        foreach (var (prefab, entity) in SystemAPI.Query<RefRO<PrefabLoadResult>>().WithEntityAccess())
+        // Instantiate every prefab loaded from the PrefabReference component
+        foreach (var (prefab, entity) in SystemAPI.Query<RefRO<PrefabLoadResult>>().WithAll<PrefabReference>().WithEntityAccess())
         {
             var instance = ecb.Instantiate(prefab.ValueRO.PrefabRoot);
 
-            // Remove both RequestEntityPrefabLoaded and PrefabLoadResult to prevent the prefab being loaded and instantiated multiple times, respectively
+            // Remove both RequestEntityPrefabLoaded and PrefabLoadResult to load and instantiate the prefab only once
             ecb.RemoveComponent<RequestEntityPrefabLoaded>(entity);
             ecb.RemoveComponent<PrefabLoadResult>(entity);
         }
@@ -350,10 +359,9 @@ public partial struct InstantiatePrefabReferenceSystem : ISystem, ISystemStartSt
     }
 }
 ```
-
-=> Add note on common error I faced:
-- Entity.null = prefabReference value was not set on RequestEntityPrefabLoaded
-- Loading Entity Scene failed because the entity header file couldn't be resolved. = Clear entity cache to fixed the issue (Preferences > entities > Clear Entity Cache)
+> **Common error faced when trying this**:
+> - *System.InvalidOperationException: Invalid Entity.Null passed* and *LoadSceneAsync - Invalid sceneGUID* => the `EntityPrefabReference` in RequestEntityPrefabLoaded doesn't point to a valid entity, it probably because the Prefab field in RequestEntityPrefabLoaded was not correctly set when adding the component.
+> - *Loading Entity Scene failed because the entity header file couldn't be resolved.* => Clear the entity cache to fix the issue (Preferences > entities > Clear Entity Cache)
 
 ### Destroy prefab instances
 

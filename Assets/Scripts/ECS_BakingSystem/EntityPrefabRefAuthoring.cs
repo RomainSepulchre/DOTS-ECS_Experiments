@@ -14,11 +14,9 @@ namespace ECS.BakingSystem
     {
         public override void Bake(EntityPrefabRefAuthoring authoring)
         {
-            Entity entity = GetEntity(TransformUsageFlags.Dynamic);
+            Entity entity = GetEntity(TransformUsageFlags.None);
 
-            //Entity prefab = GetEntity(authoring.go, TransformUsageFlags.None);
-
-            // Prefab ref
+            // Create and set EntityPrefabReference
             EntityPrefabReference prefabRef = new EntityPrefabReference(authoring.prefab);
             AddComponent(entity, new PrefabReference()
             {
